@@ -1,81 +1,79 @@
 package ru.reik.smarthome.orchestrator.service;
 
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClient;
-import ru.reik.smarthome.orchestrator.client.HomeAssistantClient;
-import ru.reik.smarthome.orchestrator.dto.assistant.AssistantAction;
 import ru.reik.smarthome.orchestrator.dto.assistant.AssistantResponse;
-import ru.reik.smarthome.orchestrator.dto.homeassistant.HomeAssistantState;
-import ru.reik.smarthome.orchestrator.dto.smarthome.SmartHomeAction;
+import ru.reik.smarthome.orchestrator.dto.smarthome.CatalogRefreshResult;
 import ru.reik.smarthome.orchestrator.dto.smarthome.SmartHomeEntity;
+import ru.reik.smarthome.orchestrator.service.homeassistant.HomeAssistantActionService;
 
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
 public class CommandService {
 
     private final CatalogService catalogService;
+    private final HomeAssistantActionService homeAssistantActionService;
 
-    public CommandService(CatalogService catalogService) {
+    public CommandService(
+            CatalogService catalogService,
+            HomeAssistantActionService homeAssistantActionService
+    ) {
         this.catalogService = catalogService;
+        this.homeAssistantActionService = homeAssistantActionService;
     }
 
     public AssistantResponse handle(String text) {
-        String result = handleCommand(text);
-
-        return new AssistantResponse(
-                result,
-                List.of()
-        );
-    }
-
-    public String handleCommand(String text) {
         if (text == null || text.isBlank()) {
-            return "Пустая команда.";
+            return AssistantResponse.text("Пустая команда.");
         }
 
         String command = normalizeCommand(text);
 
         return switch (command) {
             case "/ha_entities" -> handleHomeAssistantEntities();
-            default -> "Неизвестная команда.";
+            case "/ha_do" -> handleHomeAssistantDo(text);
+            case "/ha_refresh" -> handleHomeAssistantRefresh();
+            default -> AssistantResponse.text("Неизвестная команда.");
         };
     }
 
-    private String handleHomeAssistantEntities() {
+    private AssistantResponse handleHomeAssistantEntities() {
         List<SmartHomeEntity> entities = catalogService.getEntities();
 
         if (entities.isEmpty()) {
-            return "Каталог Home Assistant пока пуст. Попробуй чуть позже.";
+            return AssistantResponse.text("Каталог Home Assistant пока пуст. Попробуй чуть позже, или обновите каталог вручную");
         }
 
-        return entities.stream()
-                .map(this::formatEntity)
-                .collect(Collectors.joining("\n\n"));
+        return AssistantResponse.text(entities.stream()
+                .map(SmartHomeEntity::formatEntity)
+                .collect(Collectors.joining("\n\n")));
     }
 
+    private AssistantResponse handleHomeAssistantDo(String command) {
+        String[] parts = command.trim().split("\\s+");
 
-    private String formatEntity(SmartHomeEntity entity) {
-        String actions = entity.actions().stream()
-                .map(SmartHomeAction::title)
-                .distinct()
-                .collect(Collectors.joining(", "));
+        if (parts.length < 3) {
+            return AssistantResponse.text("""
+                Использование:
+                /ha_do <entity_id> <action_code>
+                
+                Пример:
+                /ha_do light.zb_5 turn_on
+                """);
+        }
 
-        return """
-                %s
-                ID: %s
-                Состояние: %s
-                Действия: %s
-                """.formatted(
-                entity.name(),
-                entity.entityId(),
-                entity.state(),
-                actions
-        ).trim();
+        try {
+            return AssistantResponse.text(homeAssistantActionService.execute(parts[1], parts[2]));
+        } catch (Exception exception) {
+            return AssistantResponse.text(exception.getMessage());
+        }
+    }
+
+    private AssistantResponse handleHomeAssistantRefresh() {
+        CatalogRefreshResult refreshResult = catalogService.refresh();
+
+        return AssistantResponse.text(refreshResult.formattedForTelegram());
     }
 
     private String normalizeCommand(String text) {
@@ -87,14 +85,5 @@ public class CommandService {
         }
 
         return command;
-    }
-
-    private boolean containsAny(String text, String... phrases) {
-        for (String phrase : phrases) {
-            if (text.contains(phrase)) {
-                return true;
-            }
-        }
-        return false;
     }
 }

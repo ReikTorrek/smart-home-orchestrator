@@ -21,22 +21,14 @@ public class HomeAssistantClient {
         return restClient.get()
                 .uri(uriBuilder -> uriBuilder.path("/api/states").build())
                 .retrieve()
-                .body(new ParameterizedTypeReference<List<HomeAssistantState>>() {});
+                .body(new ParameterizedTypeReference<>() {
+                });
     }
 
-    public void testOn() {
-        Map<String, Object> body = Map.of("entity_id", "light.zb_5");
+    public void callService(String domain, String service, Map<String, Object> body) {
+        String path = "/api/services/%s/%s".formatted(domain, service);
         restClient.post()
-                .uri(uriBuilder -> uriBuilder.path("/api/services/light/turn_on").build())
-                .body(body)
-                .retrieve()
-                .toBodilessEntity();
-    }
-
-    public void testOff() {
-        Map<String, Object> body = Map.of("entity_id", "light.zb_5");
-        restClient.post()
-                .uri(uriBuilder -> uriBuilder.path("/api/services/light/turn_off").build())
+                .uri(uriBuilder -> uriBuilder.path(path).build())
                 .body(body)
                 .retrieve()
                 .toBodilessEntity();

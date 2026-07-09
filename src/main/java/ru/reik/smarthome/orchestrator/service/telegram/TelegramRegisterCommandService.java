@@ -26,6 +26,14 @@ public class TelegramRegisterCommandService {
                 new TelegramBotCommand(
                         "ha_entities",
                         "Сущности"
+                ),
+                new TelegramBotCommand(
+                        "ha_do",
+                        "Выполнить команду"
+                ),
+                new TelegramBotCommand(
+                        "ha_refresh",
+                        "Обновить сущности"
                 )
         ));
 

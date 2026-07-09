@@ -1,4 +1,4 @@
-package ru.reik.smarthome.orchestrator.service;
+package ru.reik.smarthome.orchestrator.service.homeassistant;
 
 import org.springframework.stereotype.Service;
 import ru.reik.smarthome.orchestrator.config.homeassistant.HomeAssistantDiscoveryProperties;
