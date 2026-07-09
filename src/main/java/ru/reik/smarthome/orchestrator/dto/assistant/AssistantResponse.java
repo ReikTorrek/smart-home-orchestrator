@@ -1,4 +1,4 @@
-package ru.reik.smarthome.orchestrator.dto;
+package ru.reik.smarthome.orchestrator.dto.assistant;
 
 import java.util.List;
 

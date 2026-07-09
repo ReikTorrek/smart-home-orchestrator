@@ -6,8 +6,63 @@ telegram:
   bot:
     token: "${TELEGRAM_BOT_TOKEN}"
     username: "${TELEGRAM_BOT_USERNAME}"
+    owner-id: "${TELEGRAM_OWNER_ID}"
 
 home-assistant:
   base-url: "${HOME_ASSISTANT_BASE_URL}"
   long-lived-token: "${HOME_ASSISTANT_LONG_LIVE_TOKEN}"
   test-entity-id: "${HOME_ASSISTANT_TEST_ENTITY_ID:light.zb_5}"
+
+home-assistant-discovery:
+  rules:
+    light:
+      enabled: true
+      actions:
+        - code: turn_on
+          title: "Включить"
+          service: turn_on
+
+        - code: turn_off
+          title: "Выключить"
+          service: turn_off
+
+        - code: toggle
+          title: "Переключить"
+          service: toggle
+
+        - code: set_brightness
+          title: "Изменить яркость"
+          service: turn_on
+          required-supported-color-mode: brightness
+
+    switch:
+      enabled: true
+      actions:
+        - code: turn_on
+          title: "Включить"
+          service: turn_on
+
+        - code: turn_off
+          title: "Выключить"
+          service: turn_off
+
+        - code: toggle
+          title: "Переключить"
+          service: toggle
+
+    scene:
+      enabled: true
+      actions:
+        - code: activate
+          title: "Активировать"
+          service: turn_on
+
+    input_boolean:
+      enabled: true
+      actions:
+        - code: turn_on
+          title: "Включить"
+          service: turn_on
+        - code: turn_off
+          title: "Выключить"
+          service: turn_off

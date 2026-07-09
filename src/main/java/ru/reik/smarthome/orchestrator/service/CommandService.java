@@ -1,51 +1,92 @@
 package ru.reik.smarthome.orchestrator.service;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
 import ru.reik.smarthome.orchestrator.client.HomeAssistantClient;
-import ru.reik.smarthome.orchestrator.dto.AssistantAction;
-import ru.reik.smarthome.orchestrator.dto.AssistantResponse;
+import ru.reik.smarthome.orchestrator.dto.assistant.AssistantAction;
+import ru.reik.smarthome.orchestrator.dto.assistant.AssistantResponse;
+import ru.reik.smarthome.orchestrator.dto.homeassistant.HomeAssistantState;
+import ru.reik.smarthome.orchestrator.dto.smarthome.SmartHomeAction;
+import ru.reik.smarthome.orchestrator.dto.smarthome.SmartHomeEntity;
 
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class CommandService {
-    private final HomeAssistantClient homeAssistantClient;
 
-    public CommandService(HomeAssistantClient homeAssistantClient) {
-        this.homeAssistantClient = homeAssistantClient;
+    private final CatalogService catalogService;
+
+    public CommandService(CatalogService catalogService) {
+        this.catalogService = catalogService;
     }
 
     public AssistantResponse handle(String text) {
-        String normalized = text.toLowerCase(Locale.ROOT).trim();
-
-        if (containsAny(normalized, "нормальный", "включи")) {
-            homeAssistantClient.testOn();
-            return new AssistantResponse(
-                    "Ok, Делаю нормальный свет",
-                    List.of(new AssistantAction(
-                            "MAKE_LIGHT_COMFORTABLE",
-                            Map.of("room", "bedroom", "brightnessPct", 45)
-                    ))
-            );
-        }
-
-        if (containsAny(normalized, "выключи свет", "свет выключи")) {
-            homeAssistantClient.testOff();
-            return new AssistantResponse(
-                    "Понял. Пока это mock-режим: выбрал выключение света.",
-                    List.of(new AssistantAction(
-                            "TURN_LIGHT_OFF",
-                            Map.of("room", "bedroom")
-                    ))
-            );
-        }
+        String result = handleCommand(text);
 
         return new AssistantResponse(
-                "Я получил команду, но пока не знаю, что с ней делать.",
+                result,
                 List.of()
         );
+    }
+
+    public String handleCommand(String text) {
+        if (text == null || text.isBlank()) {
+            return "Пустая команда.";
+        }
+
+        String command = normalizeCommand(text);
+
+        return switch (command) {
+            case "/ha_entities" -> handleHomeAssistantEntities();
+            default -> "Неизвестная команда.";
+        };
+    }
+
+    private String handleHomeAssistantEntities() {
+        List<SmartHomeEntity> entities = catalogService.getEntities();
+
+        if (entities.isEmpty()) {
+            return "Каталог Home Assistant пока пуст. Попробуй чуть позже.";
+        }
+
+        return entities.stream()
+                .map(this::formatEntity)
+                .collect(Collectors.joining("\n\n"));
+    }
+
+
+    private String formatEntity(SmartHomeEntity entity) {
+        String actions = entity.actions().stream()
+                .map(SmartHomeAction::title)
+                .distinct()
+                .collect(Collectors.joining(", "));
+
+        return """
+                %s
+                ID: %s
+                Состояние: %s
+                Действия: %s
+                """.formatted(
+                entity.name(),
+                entity.entityId(),
+                entity.state(),
+                actions
+        ).trim();
+    }
+
+    private String normalizeCommand(String text) {
+        String command = text.trim();
+
+        int spaceIndex = command.indexOf(' ');
+        if (spaceIndex > 0) {
+            command = command.substring(0, spaceIndex);
+        }
+
+        return command;
     }
 
     private boolean containsAny(String text, String... phrases) {

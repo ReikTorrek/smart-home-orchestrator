@@ -1,11 +1,12 @@
-package ru.reik.smarthome.orchestrator.service;
+package ru.reik.smarthome.orchestrator.service.telegram;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import ru.reik.smarthome.orchestrator.client.TelegramClient;
-import ru.reik.smarthome.orchestrator.dto.AssistantResponse;
+import ru.reik.smarthome.orchestrator.dto.assistant.AssistantResponse;
+import ru.reik.smarthome.orchestrator.service.CommandService;
 
 import java.util.List;
 import java.util.Map;
@@ -16,15 +17,18 @@ public class TelegramPollingService {
 
     private final TelegramClient telegramClient;
     private final CommandService commandService;
+    private final TelegramAccessService telegramAccessService;
 
     private long offset = 0;
 
     public TelegramPollingService(
             TelegramClient telegramClient,
-            CommandService commandService
+            CommandService commandService,
+            TelegramAccessService telegramAccessService
     ) {
         this.telegramClient = telegramClient;
         this.commandService = commandService;
+        this.telegramAccessService = telegramAccessService;
     }
 
     @Scheduled(fixedDelayString = "${telegram.polling-delay-ms:1500}")
@@ -67,7 +71,7 @@ public class TelegramPollingService {
         Number chatId = (Number) chat.get("id");
         Map<String, Object> from = (Map<String, Object>) message.get("from");
         String id = from.get("id").toString();
-        if (!id.equals("451817956")) {
+        if (!telegramAccessService.isOwner(id)) {
             telegramClient.sendMessage(chatId.longValue(), "Ты ничего не перепутал?");
         }
 
@@ -75,6 +79,14 @@ public class TelegramPollingService {
 
         AssistantResponse assistantResponse = commandService.handle(text);
 
-        telegramClient.sendMessage(chatId.longValue(), assistantResponse.answer());
+        int maxAttempts = 3;
+        for (int i = 0; i < maxAttempts; i++) {
+            try {
+                telegramClient.sendMessage(chatId.longValue(), assistantResponse.answer());
+                break;
+            } catch (Exception exception) {
+                log.error("Telegram command failed", exception);
+            }
+        }
     }
 }

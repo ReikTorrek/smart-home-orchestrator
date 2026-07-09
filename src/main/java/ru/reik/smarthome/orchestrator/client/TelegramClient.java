@@ -3,6 +3,7 @@ package ru.reik.smarthome.orchestrator.client;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
+import ru.reik.smarthome.orchestrator.dto.telegram.TelegramBotCommand;
 
 import java.util.List;
 import java.util.Map;
@@ -46,6 +47,14 @@ public class TelegramClient {
                         "chat_id", chatId,
                         "text", text
                 ))
+                .retrieve()
+                .toBodilessEntity();
+    }
+
+    public void registerCommands(List<TelegramBotCommand> commands) {
+        restClient.post()
+                .uri("/setMyCommands")
+                .body(Map.of("commands", commands))
                 .retrieve()
                 .toBodilessEntity();
     }

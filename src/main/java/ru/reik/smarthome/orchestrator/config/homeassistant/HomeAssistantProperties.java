@@ -1,4 +1,4 @@
-package ru.reik.smarthome.orchestrator.config;
+package ru.reik.smarthome.orchestrator.config.homeassistant;
 
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.boot.context.properties.ConfigurationProperties;

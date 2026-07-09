@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
 import org.springframework.web.client.RestClient;
+import ru.reik.smarthome.orchestrator.config.homeassistant.HomeAssistantProperties;
 
 @Configuration
 public class HttpClientConfig {
