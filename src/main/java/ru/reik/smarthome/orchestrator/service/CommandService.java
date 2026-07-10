@@ -2,11 +2,15 @@ package ru.reik.smarthome.orchestrator.service;
 
 import org.springframework.stereotype.Service;
 import ru.reik.smarthome.orchestrator.dto.assistant.AssistantResponse;
+import ru.reik.smarthome.orchestrator.dto.homeassistant.HomeAssistantActionPayload;
 import ru.reik.smarthome.orchestrator.dto.smarthome.CatalogRefreshResult;
 import ru.reik.smarthome.orchestrator.dto.smarthome.SmartHomeEntity;
 import ru.reik.smarthome.orchestrator.service.homeassistant.HomeAssistantActionService;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -14,13 +18,15 @@ public class CommandService {
 
     private final CatalogService catalogService;
     private final HomeAssistantActionService homeAssistantActionService;
+    private final ObjectMapper objectMapper;
 
     public CommandService(
             CatalogService catalogService,
-            HomeAssistantActionService homeAssistantActionService
+            HomeAssistantActionService homeAssistantActionService, ObjectMapper objectMapper
     ) {
         this.catalogService = catalogService;
         this.homeAssistantActionService = homeAssistantActionService;
+        this.objectMapper = objectMapper;
     }
 
     public AssistantResponse handle(String text) {
@@ -51,20 +57,33 @@ public class CommandService {
     }
 
     private AssistantResponse handleHomeAssistantDo(String command) {
-        String[] parts = command.trim().split("\\s+");
+        String[] parts = command.trim().split("\\s+", 4);
 
         if (parts.length < 3) {
             return AssistantResponse.text("""
                 Использование:
-                /ha_do <entity_id> <action_code>
-                
-                Пример:
+                /ha_do <entity_id> <action_code> [parameters_json]
+
+                Примеры:
                 /ha_do light.zb_5 turn_on
+                /ha_do light.zb_5 set_brightness {"brightness_pct":35}
                 """);
         }
 
         try {
-            return AssistantResponse.text(homeAssistantActionService.execute(parts[1], parts[2]));
+            Map<String, Object> parameters = Map.of();
+
+            if (parts.length == 4) {
+                parameters = objectMapper.readValue(
+                        parts[3],
+                        new TypeReference<Map<String, Object>>() {
+                        }
+                );
+            }
+
+            HomeAssistantActionPayload payload = new HomeAssistantActionPayload(parts[1], parts[2], parameters);
+
+            return AssistantResponse.text(homeAssistantActionService.execute(payload));
         } catch (Exception exception) {
             return AssistantResponse.text(exception.getMessage());
         }

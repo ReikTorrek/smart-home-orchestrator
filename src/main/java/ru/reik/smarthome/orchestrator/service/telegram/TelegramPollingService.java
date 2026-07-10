@@ -73,6 +73,8 @@ public class TelegramPollingService {
         String id = from.get("id").toString();
         if (!telegramAccessService.isOwner(id)) {
             telegramClient.sendMessage(chatId.longValue(), "Ты ничего не перепутал?");
+
+            return;
         }
 
         log.info("Telegram command from chat {}: {}", chatId, text);
