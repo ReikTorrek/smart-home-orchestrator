@@ -1,17 +1,27 @@
 package ru.reik.smarthome.orchestrator.dto.homeassistant;
 
-import jakarta.validation.constraints.NotBlank;
-import org.springframework.validation.annotation.Validated;
-
 import java.util.Map;
 
-@Validated
 public record HomeAssistantActionPayload(
-        @NotBlank String entityId,
-        @NotBlank String actionCode,
+        String entityId,
+        String actionCode,
         Map<String, Object> parameters
 ) {
     public HomeAssistantActionPayload {
-        parameters = parameters == null ? Map.of() : Map.copyOf(parameters);
+        if (entityId == null || entityId.isBlank()) {
+            throw new IllegalArgumentException(
+                    "entityId must not be blank"
+            );
+        }
+
+        if (actionCode == null || actionCode.isBlank()) {
+            throw new IllegalArgumentException(
+                    "actionCode must not be blank"
+            );
+        }
+
+        parameters = parameters == null
+                ? Map.of()
+                : Map.copyOf(parameters);
     }
 }

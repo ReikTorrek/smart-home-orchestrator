@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import ru.reik.smarthome.orchestrator.client.TelegramClient;
 import ru.reik.smarthome.orchestrator.dto.assistant.AssistantResponse;
 import ru.reik.smarthome.orchestrator.service.CommandService;
+import ru.reik.smarthome.orchestrator.service.assistant.AssistantOrchestratorService;
 
 import java.util.List;
 import java.util.Map;
@@ -17,6 +18,7 @@ public class TelegramPollingService {
 
     private final TelegramClient telegramClient;
     private final CommandService commandService;
+    private final AssistantOrchestratorService  assistantOrchestratorService;
     private final TelegramAccessService telegramAccessService;
 
     private long offset = 0;
@@ -24,10 +26,12 @@ public class TelegramPollingService {
     public TelegramPollingService(
             TelegramClient telegramClient,
             CommandService commandService,
+            AssistantOrchestratorService assistantOrchestratorService,
             TelegramAccessService telegramAccessService
     ) {
         this.telegramClient = telegramClient;
         this.commandService = commandService;
+        this.assistantOrchestratorService = assistantOrchestratorService;
         this.telegramAccessService = telegramAccessService;
     }
 
@@ -79,7 +83,7 @@ public class TelegramPollingService {
 
         log.info("Telegram command from chat {}: {}", chatId, text);
 
-        AssistantResponse assistantResponse = commandService.handle(text);
+        AssistantResponse assistantResponse = assistantOrchestratorService.handle(text);
 
         int maxAttempts = 3;
         for (int i = 0; i < maxAttempts; i++) {

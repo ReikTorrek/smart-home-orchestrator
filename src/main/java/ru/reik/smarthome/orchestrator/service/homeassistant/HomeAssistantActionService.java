@@ -20,7 +20,7 @@ public class HomeAssistantActionService {
         this.catalogService = catalogService;
     }
 
-    public String execute(HomeAssistantActionPayload payload) {
+    public void execute(HomeAssistantActionPayload payload) {
         SmartHomeEntity entity = catalogService.getEntities().stream()
                 .filter(item -> item.entityId().equals(payload.entityId()))
                 .findFirst()
@@ -50,7 +50,5 @@ public class HomeAssistantActionService {
                 action.haService(),
                 requestBody
         );
-
-        return "Выполнено: %s → %s".formatted(entity.name(), action.title());
     }
 }

@@ -5,7 +5,6 @@ import ru.reik.smarthome.orchestrator.dto.assistant.AssistantResponse;
 import ru.reik.smarthome.orchestrator.dto.homeassistant.HomeAssistantActionPayload;
 import ru.reik.smarthome.orchestrator.dto.smarthome.CatalogRefreshResult;
 import ru.reik.smarthome.orchestrator.dto.smarthome.SmartHomeEntity;
-import ru.reik.smarthome.orchestrator.service.homeassistant.HomeAssistantActionService;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
@@ -17,15 +16,13 @@ import java.util.stream.Collectors;
 public class CommandService {
 
     private final CatalogService catalogService;
-    private final HomeAssistantActionService homeAssistantActionService;
     private final ObjectMapper objectMapper;
 
     public CommandService(
             CatalogService catalogService,
-            HomeAssistantActionService homeAssistantActionService, ObjectMapper objectMapper
+            ObjectMapper objectMapper
     ) {
         this.catalogService = catalogService;
-        this.homeAssistantActionService = homeAssistantActionService;
         this.objectMapper = objectMapper;
     }
 
@@ -82,8 +79,10 @@ public class CommandService {
             }
 
             HomeAssistantActionPayload payload = new HomeAssistantActionPayload(parts[1], parts[2], parameters);
-
-            return AssistantResponse.text(homeAssistantActionService.execute(payload));
+            return AssistantResponse.withAction(
+                    "Выполнено: %s → %s".formatted(payload.entityId(),payload.actionCode()),
+                    payload
+            );
         } catch (Exception exception) {
             return AssistantResponse.text(exception.getMessage());
         }
