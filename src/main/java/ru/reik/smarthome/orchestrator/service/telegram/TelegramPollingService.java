@@ -17,7 +17,6 @@ public class TelegramPollingService {
     private static final Logger log = LoggerFactory.getLogger(TelegramPollingService.class);
 
     private final TelegramClient telegramClient;
-    private final CommandService commandService;
     private final AssistantOrchestratorService  assistantOrchestratorService;
     private final TelegramAccessService telegramAccessService;
 
@@ -25,12 +24,10 @@ public class TelegramPollingService {
 
     public TelegramPollingService(
             TelegramClient telegramClient,
-            CommandService commandService,
             AssistantOrchestratorService assistantOrchestratorService,
             TelegramAccessService telegramAccessService
     ) {
         this.telegramClient = telegramClient;
-        this.commandService = commandService;
         this.assistantOrchestratorService = assistantOrchestratorService;
         this.telegramAccessService = telegramAccessService;
     }
