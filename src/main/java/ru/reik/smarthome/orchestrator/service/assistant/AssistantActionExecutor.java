@@ -34,7 +34,7 @@ public class AssistantActionExecutor {
         try {
             homeAssistantActionService.execute(action);
 
-            return new ActionExecutionResult(action, true, null);
+            return ActionExecutionResult.success(action);
         } catch (Exception exception) {
             log.error(
                     "Failed to execute Home Assistant action: {}",

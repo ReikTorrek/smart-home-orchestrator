@@ -33,7 +33,22 @@ home-assistant-discovery:
         - code: set_brightness
           title: "Изменить яркость"
           service: turn_on
-          required-supported-color-mode: brightness
+          required-capability: BRIGHTNESS
+          parameters:
+            brightness_pct:
+              type: NUMBER
+              required: true
+              minimum: 0
+              maximum: 100
+              description: "Желаемая яркость освещения в процентах"
+
+            transition:
+              type: NUMBER
+              required: false
+              minimum: 0
+              maximum: 6553
+              description: "Продолжительность плавного изменения в секундах"
+              required-capability: TRANSITION
 
     switch:
       enabled: true

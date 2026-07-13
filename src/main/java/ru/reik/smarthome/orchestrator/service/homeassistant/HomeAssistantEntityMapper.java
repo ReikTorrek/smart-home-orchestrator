@@ -3,19 +3,26 @@ package ru.reik.smarthome.orchestrator.service.homeassistant;
 import org.springframework.stereotype.Service;
 import ru.reik.smarthome.orchestrator.config.homeassistant.HomeAssistantDiscoveryProperties;
 import ru.reik.smarthome.orchestrator.dto.homeassistant.HomeAssistantState;
+import ru.reik.smarthome.orchestrator.dto.smarthome.ActionParameterDefinition;
 import ru.reik.smarthome.orchestrator.dto.smarthome.SmartHomeAction;
 import ru.reik.smarthome.orchestrator.dto.smarthome.SmartHomeEntity;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class HomeAssistantEntityMapper {
     private final HomeAssistantDiscoveryProperties discoveryProperties;
+    private final HomeAssistantCapabilityResolver capabilityResolver;
 
-    public HomeAssistantEntityMapper(HomeAssistantDiscoveryProperties discoveryProperties) {
+    public HomeAssistantEntityMapper(
+            HomeAssistantDiscoveryProperties discoveryProperties,
+            HomeAssistantCapabilityResolver capabilityResolver
+    ) {
         this.discoveryProperties = discoveryProperties;
+        this.capabilityResolver = capabilityResolver;
     }
 
     public Optional<SmartHomeEntity> map(HomeAssistantState state) {
@@ -79,13 +86,7 @@ public class HomeAssistantEntityMapper {
 
         return rule.actions().stream()
                 .filter(action -> isActionAvailable(state, action))
-                .map(action -> new SmartHomeAction(
-                        action.code(),
-                        action.title(),
-                        domain,
-                        action.service(),
-                        Map.of()
-                ))
+                .map(action -> mapAction(state, domain, action))
                 .toList();
     }
 
@@ -93,16 +94,66 @@ public class HomeAssistantEntityMapper {
             HomeAssistantState state,
             HomeAssistantDiscoveryProperties.Action action
     ) {
-        if (action.requiredSupportedColorMode() == null) {
+        if (action.requiredCapability() == null) {
             return true;
         }
 
-        Object supportedColorModes = state.attributes().supportedColorModes();
+        return capabilityResolver.supports(state, action.requiredCapability());
+    }
 
-        if (!(supportedColorModes instanceof List<?> modes)) {
-            return false;
+    private SmartHomeAction mapAction(
+            HomeAssistantState state,
+            String domain,
+            HomeAssistantDiscoveryProperties.Action action
+    ) {
+        return new SmartHomeAction(
+                action.code(),
+                action.title(),
+                domain,
+                action.service(),
+                Map.of(),
+                resolveParameters(state, action)
+        );
+    }
+
+    private Map<String, ActionParameterDefinition> resolveParameters(
+            HomeAssistantState state,
+            HomeAssistantDiscoveryProperties.Action action
+    ) {
+        return action.parameters().entrySet().stream()
+                .filter(entry -> isParameterAvailable(
+                        state,
+                        entry.getValue()
+                ))
+                .collect(Collectors.toUnmodifiableMap(
+                        Map.Entry::getKey,
+                        entry -> mapParameter(entry.getValue())
+                ));
+    }
+
+    private boolean isParameterAvailable(
+            HomeAssistantState state,
+            HomeAssistantDiscoveryProperties.Parameter parameter
+    ) {
+        if (parameter.requiredCapability() == null) {
+            return true;
         }
 
-        return modes.contains(action.requiredSupportedColorMode());
+        return capabilityResolver.supports(
+                state,
+                parameter.requiredCapability()
+        );
+    }
+
+    private ActionParameterDefinition mapParameter(
+            HomeAssistantDiscoveryProperties.Parameter parameter
+    ) {
+        return new ActionParameterDefinition(
+                parameter.type(),
+                parameter.required(),
+                parameter.minimum(),
+                parameter.maximum(),
+                parameter.description()
+        );
     }
 }

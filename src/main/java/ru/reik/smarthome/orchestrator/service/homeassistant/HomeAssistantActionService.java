@@ -14,10 +14,16 @@ import java.util.Map;
 public class HomeAssistantActionService {
     private final HomeAssistantClient homeAssistantClient;
     private final CatalogService catalogService;
+    private final HomeAssistantActionValidator actionValidator;
 
-    public HomeAssistantActionService(HomeAssistantClient homeAssistantClient, CatalogService catalogService) {
+    public HomeAssistantActionService(
+            HomeAssistantClient homeAssistantClient,
+            CatalogService catalogService,
+            HomeAssistantActionValidator actionValidator
+    ) {
         this.homeAssistantClient = homeAssistantClient;
         this.catalogService = catalogService;
+        this.actionValidator = actionValidator;
     }
 
     public void execute(HomeAssistantActionPayload payload) {
@@ -33,6 +39,7 @@ public class HomeAssistantActionService {
                         "Действие '%s' недоступно для %s".formatted(payload.actionCode(), payload.entityId())
                 ));
 
+        actionValidator.validate(action, payload.parameters());
         Map<String, Object> requestBody = new HashMap<>();
 
         if (action.defaultPayload() != null) {

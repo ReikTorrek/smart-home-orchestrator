@@ -10,6 +10,8 @@ public record HomeAssistantStateAttributes(
         @JsonProperty("effect_list")
         List<String> effectList,
         @JsonProperty("supported_color_modes")
-        List<String> supportedColorModes
+        List<String> supportedColorModes,
+        @JsonProperty("supported_features")
+        Integer supportedFeatures
 ) {
 }
