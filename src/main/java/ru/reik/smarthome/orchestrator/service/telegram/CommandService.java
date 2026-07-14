@@ -1,10 +1,12 @@
-package ru.reik.smarthome.orchestrator.service;
+package ru.reik.smarthome.orchestrator.service.telegram;
 
 import org.springframework.stereotype.Service;
 import ru.reik.smarthome.orchestrator.dto.assistant.AssistantResponse;
 import ru.reik.smarthome.orchestrator.dto.homeassistant.HomeAssistantActionPayload;
 import ru.reik.smarthome.orchestrator.dto.smarthome.CatalogRefreshResult;
 import ru.reik.smarthome.orchestrator.dto.smarthome.SmartHomeEntity;
+import ru.reik.smarthome.orchestrator.service.CatalogService;
+import ru.reik.smarthome.orchestrator.service.llm.LlmPlanningService;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
@@ -17,13 +19,15 @@ public class CommandService {
 
     private final CatalogService catalogService;
     private final ObjectMapper objectMapper;
+    private final LlmPlanningService  llmPlanningService;
 
     public CommandService(
             CatalogService catalogService,
-            ObjectMapper objectMapper
+            ObjectMapper objectMapper, LlmPlanningService llmPlanningService
     ) {
         this.catalogService = catalogService;
         this.objectMapper = objectMapper;
+        this.llmPlanningService = llmPlanningService;
     }
 
     public AssistantResponse handle(String text) {
@@ -37,8 +41,21 @@ public class CommandService {
             case "/ha_entities" -> handleHomeAssistantEntities();
             case "/ha_do" -> handleHomeAssistantDo(text);
             case "/ha_refresh" -> handleHomeAssistantRefresh();
+            case "/ai_plan" -> handleAiPlan(text);
             default -> AssistantResponse.text("Неизвестная команда.");
         };
+    }
+
+    private AssistantResponse handleAiPlan(String text) {
+        String userCommand = text.substring("/ai_plan".length());
+
+        if (userCommand.isBlank()) {
+            return AssistantResponse.text(
+                    "Использование: /ai_plan <команда>"
+            );
+        }
+
+        return llmPlanningService.createPlan(userCommand);
     }
 
     private AssistantResponse handleHomeAssistantEntities() {

@@ -5,8 +5,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import ru.reik.smarthome.orchestrator.dto.assistant.ActionExecutionReport;
 import ru.reik.smarthome.orchestrator.dto.assistant.ActionExecutionResult;
+import ru.reik.smarthome.orchestrator.dto.assistant.AssistantRequest;
 import ru.reik.smarthome.orchestrator.dto.assistant.AssistantResponse;
-import ru.reik.smarthome.orchestrator.service.CommandService;
+import ru.reik.smarthome.orchestrator.service.assistant.client.AssistantRequestHandler;
+import ru.reik.smarthome.orchestrator.service.assistant.client.AssistantRequestHandlerRegistry;
+import ru.reik.smarthome.orchestrator.service.telegram.CommandService;
+import ru.reik.smarthome.orchestrator.service.llm.LlmPlanFormatter;
+import ru.reik.smarthome.orchestrator.service.llm.LlmPlanningService;
 
 import java.util.stream.Collectors;
 
@@ -14,16 +19,20 @@ import java.util.stream.Collectors;
 public class AssistantOrchestratorService {
     private static final Logger log = LoggerFactory.getLogger(AssistantOrchestratorService.class);
 
-    private final CommandService commandService;
     private final AssistantActionExecutor assistantActionExecutor;
+    private final AssistantRequestHandlerRegistry  assistantRequestHandlerRegistry;
 
-    public AssistantOrchestratorService(CommandService commandService, AssistantActionExecutor assistantActionExecutor) {
-        this.commandService = commandService;
+    public AssistantOrchestratorService(
+            AssistantActionExecutor assistantActionExecutor,
+            AssistantRequestHandlerRegistry assistantRequestHandlerRegistry
+    ) {
         this.assistantActionExecutor = assistantActionExecutor;
+        this.assistantRequestHandlerRegistry = assistantRequestHandlerRegistry;
     }
 
-    public AssistantResponse handle(String text) {
-        AssistantResponse response = commandService.handle(text);
+    public AssistantResponse handle(AssistantRequest request) {
+        AssistantRequestHandler handler = assistantRequestHandlerRegistry.get(request.clientType());
+        AssistantResponse response = handler.handle(request);
 
         try {
             ActionExecutionReport report = assistantActionExecutor.executeAll(response.actions());

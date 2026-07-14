@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
 import org.springframework.web.client.RestClient;
 import ru.reik.smarthome.orchestrator.config.homeassistant.HomeAssistantProperties;
+import ru.reik.smarthome.orchestrator.config.llm.LlmProperties;
 
 @Configuration
 public class HttpClientConfig {
@@ -25,6 +26,18 @@ public class HttpClientConfig {
                 .baseUrl(homeAssistantProperties.baseUrl())
                 .defaultHeaders(headers -> {
                     headers.setBearerAuth(homeAssistantProperties.longLivedToken());
+                    headers.setContentType(MediaType.APPLICATION_JSON);
+                })
+                .build();
+    }
+
+    @Bean
+    @Qualifier("llmClient")
+    public RestClient llmClient(LlmProperties  llmProperties) {
+        return RestClient.builder()
+                .baseUrl(llmProperties.baseUrl())
+                .defaultHeaders(headers -> {
+                    headers.setBearerAuth(llmProperties.apiKey());
                     headers.setContentType(MediaType.APPLICATION_JSON);
                 })
                 .build();

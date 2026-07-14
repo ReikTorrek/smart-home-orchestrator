@@ -5,8 +5,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import ru.reik.smarthome.orchestrator.client.TelegramClient;
+import ru.reik.smarthome.orchestrator.dto.assistant.AssistantClientType;
+import ru.reik.smarthome.orchestrator.dto.assistant.AssistantRequest;
 import ru.reik.smarthome.orchestrator.dto.assistant.AssistantResponse;
-import ru.reik.smarthome.orchestrator.service.CommandService;
 import ru.reik.smarthome.orchestrator.service.assistant.AssistantOrchestratorService;
 
 import java.util.List;
@@ -80,7 +81,10 @@ public class TelegramPollingService {
 
         log.info("Telegram command from chat {}: {}", chatId, text);
 
-        AssistantResponse assistantResponse = assistantOrchestratorService.handle(text);
+        AssistantResponse assistantResponse = assistantOrchestratorService.handle(new AssistantRequest(
+                AssistantClientType.TELEGRAM,
+                text
+        ));
 
         int maxAttempts = 3;
         for (int i = 0; i < maxAttempts; i++) {

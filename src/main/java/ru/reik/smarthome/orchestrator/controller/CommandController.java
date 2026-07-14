@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import ru.reik.smarthome.orchestrator.dto.assistant.AssistantResponse;
 import ru.reik.smarthome.orchestrator.dto.UserCommandRequest;
-import ru.reik.smarthome.orchestrator.service.CommandService;
+import ru.reik.smarthome.orchestrator.service.telegram.CommandService;
 
 @RestController
 @RequestMapping("/api/command")
