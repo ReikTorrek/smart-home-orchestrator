@@ -3,6 +3,7 @@ package ru.reik.smarthome.orchestrator.service.llm;
 import org.springframework.stereotype.Service;
 import ru.reik.smarthome.orchestrator.client.LlmClient;
 import ru.reik.smarthome.orchestrator.dto.assistant.AssistantResponse;
+import ru.reik.smarthome.orchestrator.dto.llm.LlmEntityContext;
 import ru.reik.smarthome.orchestrator.dto.llm.LlmPlan;
 import ru.reik.smarthome.orchestrator.dto.smarthome.SmartHomeEntity;
 import ru.reik.smarthome.orchestrator.service.CatalogService;
@@ -17,19 +18,21 @@ public class LlmPlanningService {
     private final LlmPromptFactory promptFactory;
     private final LlmPlanMapper planMapper;
     private final ObjectMapper objectMapper;
+    private final LlmContextService llmContextService;
 
     public LlmPlanningService(
             CatalogService catalogService,
             LlmClient llmClient,
             LlmPromptFactory promptFactory,
             LlmPlanMapper planMapper,
-            ObjectMapper objectMapper
+            ObjectMapper objectMapper, LlmContextService llmContextService
     ) {
         this.catalogService = catalogService;
         this.llmClient = llmClient;
         this.promptFactory = promptFactory;
         this.planMapper = planMapper;
         this.objectMapper = objectMapper;
+        this.llmContextService = llmContextService;
     }
 
     public AssistantResponse createPlan(String command) {
@@ -39,7 +42,8 @@ public class LlmPlanningService {
             );
         }
 
-        List<SmartHomeEntity> entities = catalogService.getEntities();
+        //List<SmartHomeEntity> entities = catalogService.getEntities();
+        List<LlmEntityContext> entities = llmContextService.getCurrentEntities();
 
         if (entities.isEmpty()) {
             throw new IllegalStateException(

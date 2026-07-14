@@ -4,4 +4,5 @@ public enum ActionParameterType {
     NUMBER,
     STRING,
     BOOLEAN,
+    NUMBER_LIST,
 }

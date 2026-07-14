@@ -153,6 +153,9 @@ public class HomeAssistantEntityMapper {
                 parameter.required(),
                 parameter.minimum(),
                 parameter.maximum(),
+                parameter.size(),
+                parameter.itemMinimum(),
+                parameter.itemMaximum(),
                 parameter.description()
         );
     }

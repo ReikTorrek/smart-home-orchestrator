@@ -49,16 +49,14 @@ public record HomeAssistantDiscoveryProperties(
     public record Parameter(
             @NotNull
             ActionParameterType type,
-
             boolean required,
-
             Double minimum,
-
             Double maximum,
-
+            Integer size,
+            Double itemMinimum,
+            Double itemMaximum,
             @NotBlank
             String description,
-
             SmartHomeCapability requiredCapability
     ) {
         public Parameter {

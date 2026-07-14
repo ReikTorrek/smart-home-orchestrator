@@ -5,6 +5,9 @@ public record ActionParameterDefinition(
         boolean required,
         Double minimum,
         Double maximum,
+        Integer size,
+        Double itemMinimum,
+        Double itemMaximum,
         String description
 ) {
 }

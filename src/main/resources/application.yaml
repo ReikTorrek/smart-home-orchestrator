@@ -50,6 +50,36 @@ home-assistant-discovery:
               description: "Продолжительность плавного изменения в секундах"
               required-capability: TRANSITION
 
+        - code: set_color
+          title: "Изменить цвет"
+          service: turn_on
+          required-capability: COLOR
+          parameters:
+            rgb_color:
+              type: NUMBER_LIST
+              required: true
+              size: 3
+              item-minimum: 0
+              item-maximum: 255
+              description: "Цвет в формате RGB: [красный, зелёный, синий]"
+            brightness_pct:
+              type: NUMBER
+              required: false
+              minimum: 1
+              maximum: 100
+
+        - code: set_color_temperature
+          title: "Изменить температуру белого света"
+          service: turn_on
+          required-capability: COLOR_TEMPERATURE
+          parameters:
+            color_temp_kelvin:
+              type: NUMBER
+              required: true
+              minimum: 2000
+              maximum: 6500
+              description: "Температура света в Кельвинах: меньше — теплее, больше — холоднее"
+
     switch:
       enabled: true
       actions:

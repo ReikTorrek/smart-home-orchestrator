@@ -95,6 +95,13 @@ public class HomeAssistantActionValidator {
                     definition
             );
         }
+        switch (definition.type()) {
+            case NUMBER -> {
+                assert value instanceof Number;
+                validateNumberRange(name, (Number) value, definition);
+            }
+            case NUMBER_LIST -> validateNumberList(name, value, definition);
+        }
     }
 
     private void validateType(
@@ -106,6 +113,7 @@ public class HomeAssistantActionValidator {
             case NUMBER -> value instanceof Number;
             case STRING -> value instanceof String;
             case BOOLEAN -> value instanceof Boolean;
+            case NUMBER_LIST -> isNumberList(value);
         };
 
         if (!valid) {
@@ -123,10 +131,7 @@ public class HomeAssistantActionValidator {
     ) {
         double value = number.doubleValue();
 
-        if (
-                definition.minimum() != null
-                        && value < definition.minimum()
-        ) {
+        if (definition.minimum() != null && value < definition.minimum()) {
             throw new IllegalArgumentException(
                     "Параметр '%s' не может быть меньше %s"
                             .formatted(
@@ -136,10 +141,7 @@ public class HomeAssistantActionValidator {
             );
         }
 
-        if (
-                definition.maximum() != null
-                        && value > definition.maximum()
-        ) {
+        if (definition.maximum() != null && value > definition.maximum()) {
             throw new IllegalArgumentException(
                     "Параметр '%s' не может быть больше %s"
                             .formatted(
@@ -148,5 +150,88 @@ public class HomeAssistantActionValidator {
                             )
             );
         }
+    }
+
+    private void validateNumberList(
+            String name,
+            Object value,
+            ActionParameterDefinition definition
+    ) {
+        if (!(value instanceof List<?> list)) {
+            return;
+        }
+
+        validateListSize(
+                name,
+                list,
+                definition
+        );
+
+        for (int index = 0; index < list.size(); index++) {
+            Number number = (Number) list.get(index);
+
+            validateListItemRange(
+                    name,
+                    index,
+                    number,
+                    definition
+            );
+        }
+    }
+
+    private void validateListSize(
+            String name,
+            List<?> values,
+            ActionParameterDefinition definition
+    ) {
+        if (definition.size() != null && values.size() != definition.size()) {
+            throw new IllegalArgumentException(
+                    "Параметр '%s' должен содержать %d элементов"
+                            .formatted(
+                                    name,
+                                    definition.size()
+                            )
+            );
+        }
+    }
+
+    private void validateListItemRange(
+            String name,
+            int index,
+            Number number,
+            ActionParameterDefinition definition
+    ) {
+        double value = number.doubleValue();
+
+        if (definition.itemMinimum() != null && value < definition.itemMinimum()) {
+            throw new IllegalArgumentException(
+                    "Элемент %d параметра '%s' не может быть меньше %s"
+                            .formatted(
+                                    index,
+                                    name,
+                                    definition.itemMinimum()
+                            )
+            );
+        }
+
+        if (definition.itemMaximum() != null && value > definition.itemMaximum()) {
+            throw new IllegalArgumentException(
+                    "Элемент %d параметра '%s' не может быть больше %s"
+                            .formatted(
+                                    index,
+                                    name,
+                                    definition.itemMaximum()
+                            )
+            );
+        }
+    }
+
+    private boolean isNumberList(Object value) {
+        if (!(value instanceof List<?> list)) {
+            return false;
+        }
+
+        return list.stream()
+                .allMatch(item -> item instanceof Number);
     }
 }
