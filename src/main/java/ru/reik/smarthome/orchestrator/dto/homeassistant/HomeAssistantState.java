@@ -18,6 +18,12 @@ public record HomeAssistantState(
         OffsetDateTime lastChanged,
 
         @JsonProperty("last_updated")
-        OffsetDateTime lastUpdated
+        OffsetDateTime lastUpdated,
+
+        @JsonProperty("min_color_temp_kelvin")
+        Integer minColorTempKelvin,
+
+        @JsonProperty("max_color_temp_kelvin")
+        Integer maxColorTempKelvin
 ) {
 }

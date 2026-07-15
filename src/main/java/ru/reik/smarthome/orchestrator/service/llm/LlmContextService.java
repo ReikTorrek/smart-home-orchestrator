@@ -11,6 +11,7 @@ import ru.reik.smarthome.orchestrator.service.CatalogService;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -37,25 +38,19 @@ public class LlmContextService {
 
         return catalog.stream()
                 .map(entity -> mapEntity(entity, currentStates.get(entity.entityId())))
+                .flatMap(Optional::stream)
                 .toList();
     }
 
-    private LlmEntityContext mapEntity(
+    private Optional<LlmEntityContext> mapEntity(
             SmartHomeEntity entity,
             HomeAssistantState currentState
     ) {
         if (currentState == null) {
-            return new LlmEntityContext(
-                    entity.entityId(),
-                    entity.domain(),
-                    entity.name(),
-                    "unknown",
-                    Map.of(),
-                    entity.actions()
-            );
+            return Optional.empty();
         }
 
-        return new LlmEntityContext(
+        return Optional.of(new LlmEntityContext(
                 entity.entityId(),
                 entity.domain(),
                 entity.name(),
@@ -65,7 +60,7 @@ public class LlmContextService {
                         currentState.attributes()
                 ),
                 entity.actions()
-        );
+        ));
     }
 
     private Map<String, Object> extractCurrentValues(

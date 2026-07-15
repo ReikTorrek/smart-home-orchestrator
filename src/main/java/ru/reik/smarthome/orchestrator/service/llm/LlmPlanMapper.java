@@ -13,7 +13,7 @@ import java.util.List;
 
 @Component
 public class LlmPlanMapper {
-    private static final int MAX_ACTION = 10;
+    private static final int MAX_ACTIONS = 10;
 
     private final CatalogService catalogService;
     private final HomeAssistantActionValidator actionValidator;
@@ -28,14 +28,14 @@ public class LlmPlanMapper {
             throw new IllegalArgumentException("Llm plan is null");
         }
 
-        if (plan.actions().size() > MAX_ACTION) {
-            throw new IllegalArgumentException("Llm plan actions are larger than " + MAX_ACTION);
+        if (plan.actions().size() > MAX_ACTIONS) {
+            throw new IllegalArgumentException("Llm plan actions are larger than " + MAX_ACTIONS);
         }
 
         List<HomeAssistantActionPayload> actions = plan.actions().stream().map(this::mapAction).toList();
 
         return AssistantResponse.withActions(
-                plan.answer(),
+                normalizeAnswer(plan.answer()),
                 actions
         );
     }

@@ -80,7 +80,21 @@ home-assistant-discovery:
               minimum: 2000
               maximum: 6500
               description: "Температура света в Кельвинах: меньше — теплее, больше — холоднее"
-      excluded-entities: "light.zb_3,light.zb_2"
+
+        - code: set_effect
+          title: "Включить эффект"
+          service: turn_on
+          required-capability: EFFECT
+          parameters:
+            effect:
+              type: STRING
+              required: true
+              allowed-values-from-attribute: effectList
+              description: "Название эффекта"
+
+      excluded-entities:
+        - "light.zb_3"
+        - "light.zb_2"
 
     switch:
       enabled: true
@@ -103,7 +117,8 @@ home-assistant-discovery:
         - code: activate
           title: "Активировать"
           service: turn_on
-      excluded-entities: "scene.thunderstorm_snapshot_rgb_strip"
+      excluded-entities:
+        - "scene.thunderstorm_snapshot_rgb_strip"
 
     input_boolean:
       enabled: true
@@ -114,7 +129,8 @@ home-assistant-discovery:
         - code: turn_off
           title: "Выключить"
           service: turn_off
-      excluded-entities: "input_boolean.arkham_mode"
+      excluded-entities:
+        - "input_boolean.arkham_mode"
 
 llm:
   enabled: "${LLM_ENABLED:false}"

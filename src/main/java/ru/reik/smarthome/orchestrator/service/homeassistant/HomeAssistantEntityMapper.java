@@ -16,13 +16,16 @@ import java.util.stream.Collectors;
 public class HomeAssistantEntityMapper {
     private final HomeAssistantDiscoveryProperties discoveryProperties;
     private final HomeAssistantCapabilityResolver capabilityResolver;
+    private final HomeAssistantAttributeValueResolver attributeValueResolver;
 
     public HomeAssistantEntityMapper(
             HomeAssistantDiscoveryProperties discoveryProperties,
-            HomeAssistantCapabilityResolver capabilityResolver
+            HomeAssistantCapabilityResolver capabilityResolver,
+            HomeAssistantAttributeValueResolver attributeValueResolver
     ) {
         this.discoveryProperties = discoveryProperties;
         this.capabilityResolver = capabilityResolver;
+        this.attributeValueResolver = attributeValueResolver;
     }
 
     public Optional<SmartHomeEntity> map(HomeAssistantState state) {
@@ -127,7 +130,10 @@ public class HomeAssistantEntityMapper {
                 ))
                 .collect(Collectors.toUnmodifiableMap(
                         Map.Entry::getKey,
-                        entry -> mapParameter(entry.getValue())
+                        entry -> mapParameter(
+                                state,
+                                entry.getValue()
+                        )
                 ));
     }
 
@@ -146,8 +152,15 @@ public class HomeAssistantEntityMapper {
     }
 
     private ActionParameterDefinition mapParameter(
+            HomeAssistantState state,
             HomeAssistantDiscoveryProperties.Parameter parameter
     ) {
+        List<String> allowedValues =
+                attributeValueResolver.resolveStringList(
+                        state,
+                        parameter.allowedValuesFromAttribute()
+                );
+
         return new ActionParameterDefinition(
                 parameter.type(),
                 parameter.required(),
@@ -156,7 +169,8 @@ public class HomeAssistantEntityMapper {
                 parameter.size(),
                 parameter.itemMinimum(),
                 parameter.itemMaximum(),
-                parameter.description()
+                parameter.description(),
+                allowedValues
         );
     }
 }

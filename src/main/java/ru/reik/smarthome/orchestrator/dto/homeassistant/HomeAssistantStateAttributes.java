@@ -42,4 +42,7 @@ public record HomeAssistantStateAttributes(
 
         String effect
 ) {
+        public HomeAssistantStateAttributes {
+                effectList = effectList == null ? List.of() : effectList;
+        }
 }

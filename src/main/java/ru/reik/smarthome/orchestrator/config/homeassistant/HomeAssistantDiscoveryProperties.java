@@ -12,6 +12,7 @@ import ru.reik.smarthome.orchestrator.dto.smarthome.SmartHomeCapability;
 import java.lang.reflect.Parameter;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Validated
 @ConfigurationProperties(prefix = "home-assistant-discovery")
@@ -22,12 +23,10 @@ public record HomeAssistantDiscoveryProperties(
             boolean enabled,
 
             List<Action> actions,
-            String excludedEntities
+            Set<String> excludedEntities
     ) {
         public Rule {
-            if (excludedEntities == null || excludedEntities.isBlank()) {
-                excludedEntities = "";
-            }
+            excludedEntities = excludedEntities == null ? Set.of() : Set.copyOf(excludedEntities);
         }
     }
 
@@ -64,7 +63,8 @@ public record HomeAssistantDiscoveryProperties(
             Double itemMaximum,
             @NotBlank
             String description,
-            SmartHomeCapability requiredCapability
+            SmartHomeCapability requiredCapability,
+            String allowedValuesFromAttribute
     ) {
         public Parameter {
             if (

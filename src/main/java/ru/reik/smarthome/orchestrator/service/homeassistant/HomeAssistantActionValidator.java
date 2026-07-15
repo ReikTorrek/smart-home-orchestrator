@@ -94,6 +94,26 @@ public class HomeAssistantActionValidator {
                 validateNumberRange(name, (Number) value, definition);
             }
             case NUMBER_LIST -> validateNumberList(name, value, definition);
+            case STRING -> validateString(name, (String) value, definition);
+        }
+    }
+
+    private void validateString(String name, String value, ActionParameterDefinition definition) {
+        List<String> allowedValues = definition.allowedValues();
+
+        if (allowedValues.isEmpty()) {
+            return;
+        }
+
+        if (!allowedValues.contains(value)) {
+            throw new IllegalArgumentException(
+                    "Параметр '%s' содержит недопустимое значение '%s'. Разрешённые значения: %s"
+                            .formatted(
+                                    name,
+                                    value,
+                                    String.join(", ", allowedValues)
+                            )
+            );
         }
     }
 

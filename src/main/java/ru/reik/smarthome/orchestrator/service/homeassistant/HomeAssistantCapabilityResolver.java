@@ -32,18 +32,6 @@ public class HomeAssistantCapabilityResolver {
                     "xy"
             );
 
-    private static final Set<String> BRIGHTNESS_MODES =
-            Set.of(
-                    "brightness",
-                    "color_temp",
-                    "hs",
-                    "rgb",
-                    "rgbw",
-                    "rgbww",
-                    "white",
-                    "xy"
-            );
-
     private static final int TRANSITION_FEATURE = 32;
 
     public boolean supports(
@@ -64,8 +52,12 @@ public class HomeAssistantCapabilityResolver {
                     supportsTransition(attributes);
             case COLOR -> supportsColorMode(attributes);
             case COLOR_TEMPERATURE -> supportsColorTemperature(attributes);
-            case EFFECT -> false;
+            case EFFECT -> supportsEffect(attributes);
         };
+    }
+
+    private boolean supportsEffect(HomeAssistantStateAttributes attributes) {
+        return attributes.effect() != null || !attributes.effectList().isEmpty();
     }
 
     private boolean supportsBrightness(
