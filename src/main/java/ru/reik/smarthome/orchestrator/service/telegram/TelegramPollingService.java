@@ -38,7 +38,18 @@ public class TelegramPollingService {
         try {
             log.debug("Polling Telegram updates. Current offset: {}", offset);
 
-            List<Map<String, Object>> updates = telegramClient.getUpdates(offset);
+            int maxAttempts = 3;
+            List<Map<String, Object>> updates = List.of();
+            for (int i = 1; i <= maxAttempts; i++) {
+                try {
+                    updates = telegramClient.getUpdates(offset);
+
+                    break;
+                } catch (Exception exception) {
+                    log.error("Telegram polling failed", exception);
+                    wait(2000);
+                }
+            }
 
             if (updates.isEmpty()) {
                 return;
@@ -83,6 +94,7 @@ public class TelegramPollingService {
 
         AssistantResponse assistantResponse = assistantOrchestratorService.handle(new AssistantRequest(
                 AssistantClientType.TELEGRAM,
+                chatId.toString(),
                 text
         ));
 

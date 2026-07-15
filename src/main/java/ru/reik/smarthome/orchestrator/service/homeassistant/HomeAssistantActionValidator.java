@@ -88,13 +88,6 @@ public class HomeAssistantActionValidator {
                 definition.type()
         );
 
-        if (value instanceof Number number) {
-            validateNumberRange(
-                    name,
-                    number,
-                    definition
-            );
-        }
         switch (definition.type()) {
             case NUMBER -> {
                 assert value instanceof Number;

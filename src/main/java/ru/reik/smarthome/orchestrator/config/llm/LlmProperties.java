@@ -8,7 +8,8 @@ public record LlmProperties(
         boolean enabled,
         @NotBlank String baseUrl,
         @NotBlank String apiKey,
-        @NotBlank String model
+        @NotBlank String model,
+        double temperature
 ) {
     public void validateConfigured() {
         if (!enabled) {

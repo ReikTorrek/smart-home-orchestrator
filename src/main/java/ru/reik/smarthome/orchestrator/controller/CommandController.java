@@ -20,6 +20,7 @@ public class CommandController {
 
     @PostMapping
     public AssistantResponse handle(@Valid @RequestBody UserCommandRequest request) {
-        return commandService.handle(request.text());
+        //return commandService.handle(request);
+        return AssistantResponse.text("text");
     }
 }

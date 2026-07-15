@@ -25,6 +25,21 @@ public record HomeAssistantStateAttributes(
         @JsonProperty("color_temp_kelvin")
         Integer colorTempKelvin,
 
+        @JsonProperty("rgb_color")
+        List<Integer> rgbColor,
+
+        @JsonProperty("xy_color")
+        List<Double> xyColor,
+
+        @JsonProperty("hs_color")
+        List<Double> hsColor,
+
+        @JsonProperty("min_color_temp_kelvin")
+        Integer minColorTempKelvin,
+
+        @JsonProperty("max_color_temp_kelvin")
+        Integer maxColorTempKelvin,
+
         String effect
 ) {
 }

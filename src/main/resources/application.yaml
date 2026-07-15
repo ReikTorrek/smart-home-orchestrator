@@ -67,6 +67,7 @@ home-assistant-discovery:
               required: false
               minimum: 1
               maximum: 100
+              description: "Необязательная яркость цвета в процентах"
 
         - code: set_color_temperature
           title: "Изменить температуру белого света"
@@ -79,6 +80,7 @@ home-assistant-discovery:
               minimum: 2000
               maximum: 6500
               description: "Температура света в Кельвинах: меньше — теплее, больше — холоднее"
+      excluded-entities: "light.zb_3,light.zb_2"
 
     switch:
       enabled: true
@@ -101,6 +103,7 @@ home-assistant-discovery:
         - code: activate
           title: "Активировать"
           service: turn_on
+      excluded-entities: "scene.thunderstorm_snapshot_rgb_strip"
 
     input_boolean:
       enabled: true
@@ -111,9 +114,11 @@ home-assistant-discovery:
         - code: turn_off
           title: "Выключить"
           service: turn_off
+      excluded-entities: "input_boolean.arkham_mode"
 
 llm:
   enabled: "${LLM_ENABLED:false}"
   base-url: "${LLM_BASE_URL:https://openrouter.ai/api/v1}"
   api-key: "${LLM_API_KEY:}"
   model: "${LLM_MODEL:openrouter/free}"
+  temperature: "${LLM_TEMPERATURE:0.15}"

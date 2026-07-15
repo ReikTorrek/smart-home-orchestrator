@@ -113,6 +113,41 @@ public class LlmContextService {
             );
         }
 
+        if (attributes.minColorTempKelvin() != null) {
+            values.put(
+                    "min_color_temp_kelvin",
+                    attributes.minColorTempKelvin()
+            );
+        }
+
+        if (attributes.maxColorTempKelvin() != null) {
+            values.put(
+                    "max_color_temp_kelvin",
+                    attributes.maxColorTempKelvin()
+            );
+        }
+
+        if (attributes.rgbColor() != null) {
+            values.put(
+                    "rgb_color",
+                    attributes.rgbColor()
+            );
+        }
+
+        if (attributes.xyColor() != null) {
+            values.put(
+                    "xy_color",
+                    attributes.xyColor()
+            );
+        }
+
+        if (attributes.hsColor() != null) {
+            values.put(
+                    "hs_color",
+                    attributes.hsColor()
+            );
+        }
+
         if (attributes.effect() != null) {
             values.put(
                     "effect",

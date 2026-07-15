@@ -6,10 +6,13 @@ import java.util.List;
 
 public record LlmChatRequest(
         String model,
-        List<Message> messages,
+        List<LlmMessage> messages,
 
         @JsonProperty("response_format")
-        ResponseFormat responseFormat
+        ResponseFormat responseFormat,
+
+        double temperature,
+        Provider provider
 ) {
     public record Message(
             String role,
@@ -19,6 +22,17 @@ public record LlmChatRequest(
 
     public record ResponseFormat(
             String type
+    ) {
+    }
+
+    public record Provider(
+            @JsonProperty("require_parameters")
+            boolean requireParameters,
+
+            @JsonProperty("data_collection")
+            String dataCollection,
+
+            boolean zdr
     ) {
     }
 }

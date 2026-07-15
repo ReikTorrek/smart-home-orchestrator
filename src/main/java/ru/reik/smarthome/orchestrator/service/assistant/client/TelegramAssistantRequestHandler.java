@@ -21,6 +21,6 @@ public class TelegramAssistantRequestHandler implements AssistantRequestHandler 
 
     @Override
     public AssistantResponse handle(AssistantRequest request) {
-        return commandService.handle(request.text());
+        return commandService.handle(request);
     }
 }

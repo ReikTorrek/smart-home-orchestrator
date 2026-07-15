@@ -21,8 +21,15 @@ public record HomeAssistantDiscoveryProperties(
     public record Rule(
             boolean enabled,
 
-            List<Action> actions
-    ) {}
+            List<Action> actions,
+            String excludedEntities
+    ) {
+        public Rule {
+            if (excludedEntities == null || excludedEntities.isBlank()) {
+                excludedEntities = "";
+            }
+        }
+    }
 
     public record Action(
             @NotBlank

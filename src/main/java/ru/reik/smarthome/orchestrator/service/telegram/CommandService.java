@@ -1,6 +1,7 @@
 package ru.reik.smarthome.orchestrator.service.telegram;
 
 import org.springframework.stereotype.Service;
+import ru.reik.smarthome.orchestrator.dto.assistant.AssistantRequest;
 import ru.reik.smarthome.orchestrator.dto.assistant.AssistantResponse;
 import ru.reik.smarthome.orchestrator.dto.homeassistant.HomeAssistantActionPayload;
 import ru.reik.smarthome.orchestrator.dto.smarthome.CatalogRefreshResult;
@@ -30,7 +31,9 @@ public class CommandService {
         this.llmPlanningService = llmPlanningService;
     }
 
-    public AssistantResponse handle(String text) {
+    public AssistantResponse handle(AssistantRequest request) {
+        String text = request.text();
+
         if (text == null || text.isBlank()) {
             return AssistantResponse.text("Пустая команда.");
         }
@@ -41,13 +44,20 @@ public class CommandService {
             case "/ha_entities" -> handleHomeAssistantEntities();
             case "/ha_do" -> handleHomeAssistantDo(text);
             case "/ha_refresh" -> handleHomeAssistantRefresh();
-            case "/ai_plan" -> handleAiPlan(text);
+            case "/ai_plan" -> handleAiPlan(request);
+            case "/clear_conversation" -> clearConversation(request);
             default -> AssistantResponse.text("Неизвестная команда.");
         };
     }
 
-    private AssistantResponse handleAiPlan(String text) {
-        String userCommand = text.substring("/ai_plan".length());
+    private AssistantResponse clearConversation(AssistantRequest request) {
+        llmPlanningService.clearConversation(request);
+
+        return AssistantResponse.text("Разговор почищен");
+    }
+
+    private AssistantResponse handleAiPlan(AssistantRequest request) {
+        String userCommand = request.text().substring("/ai_plan".length());
 
         if (userCommand.isBlank()) {
             return AssistantResponse.text(
@@ -55,7 +65,7 @@ public class CommandService {
             );
         }
 
-        return llmPlanningService.createPlan(userCommand);
+        return llmPlanningService.createPlan(new AssistantRequest(request.clientType(), request.conversationId(), userCommand));
     }
 
     private AssistantResponse handleHomeAssistantEntities() {

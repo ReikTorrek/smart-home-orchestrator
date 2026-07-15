@@ -6,10 +6,10 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
-import ru.reik.smarthome.orchestrator.client.LlmClient;
 import ru.reik.smarthome.orchestrator.config.llm.LlmProperties;
 import ru.reik.smarthome.orchestrator.dto.llm.LlmChatRequest;
 import ru.reik.smarthome.orchestrator.dto.llm.LlmChatResponse;
+import ru.reik.smarthome.orchestrator.dto.llm.LlmMessage;
 
 import java.util.List;
 
@@ -31,22 +31,19 @@ public class OpenAiCompatibleLlmClient implements LlmClient {
     }
 
     @Override
-    public String generateJson(String systemPrompt, String userPrompt) {
+    public String generateJson(List<LlmMessage> messages) {
         llmProperties.validateConfigured();
 
         LlmChatRequest request = new LlmChatRequest(
                 llmProperties.model(),
-                List.of(
-                        new LlmChatRequest.Message(
-                                "system",
-                                systemPrompt
-                        ),
-                        new LlmChatRequest.Message(
-                                "user",
-                                userPrompt
-                        )
-                ),
-                new LlmChatRequest.ResponseFormat("json_object")
+                messages,
+                new LlmChatRequest.ResponseFormat("json_object"),
+                llmProperties.temperature(),
+                new LlmChatRequest.Provider(
+                        true,
+                        "deny",
+                        true
+                )
         );
 
         try {

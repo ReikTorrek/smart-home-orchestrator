@@ -60,7 +60,7 @@ public class HomeAssistantEntityMapper {
         String domain = entityId.substring(0, dotIndex);
         HomeAssistantDiscoveryProperties.Rule rule = discoveryProperties.rules().get(domain);
 
-        if (rule == null || !rule.enabled()) {
+        if (rule == null || !rule.enabled() || rule.excludedEntities().contains(entityId)) {
             return Optional.empty();
         }
 
