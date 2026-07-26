@@ -2,12 +2,13 @@ package ru.reik.smarthome.orchestrator.service.llm;
 
 import org.springframework.stereotype.Service;
 import ru.reik.smarthome.orchestrator.client.llm.LlmClient;
+import ru.reik.smarthome.orchestrator.dto.assistant.AssistantHandlerResult;
 import ru.reik.smarthome.orchestrator.dto.assistant.AssistantRequest;
-import ru.reik.smarthome.orchestrator.dto.assistant.AssistantResponse;
 import ru.reik.smarthome.orchestrator.dto.llm.*;
-import ru.reik.smarthome.orchestrator.service.CatalogService;
 import ru.reik.smarthome.orchestrator.service.llm.context.InMemoryLlmConversationStore;
+import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,7 +37,7 @@ public class LlmPlanningService {
         this.conversationStore = conversationStore;
     }
 
-    public AssistantResponse createPlan(AssistantRequest request) {
+    public AssistantHandlerResult createPlan(AssistantRequest request) {
         String command = request.text();
         if (command == null || command.isBlank()) {
             throw new IllegalArgumentException(
@@ -66,11 +67,7 @@ public class LlmPlanningService {
                 LlmPlan.class
         );
 
-        AssistantResponse response = planMapper.map(plan);
-
-        conversationStore.append(conversationKey, new LlmConversationTurn(command, objectMapper.writeValueAsString(response)));
-
-        return response;
+        return AssistantHandlerResult.save(planMapper.map(plan));
     }
 
     public void clearConversation(AssistantRequest request) {
@@ -82,17 +79,60 @@ public class LlmPlanningService {
         conversationStore.clear(conversationKey);
     }
 
-    private List<LlmMessage> buildMessages(LlmConversationKey key, String command, List<LlmEntityContext> entities) {
+    private List<LlmMessage> buildMessages(
+            LlmConversationKey key,
+            String command,
+            List<LlmEntityContext> entities
+    ) {
         List<LlmMessage> messages = new ArrayList<>();
+
         messages.add(LlmMessage.system(promptFactory.buildSystemPrompt()));
 
         for (LlmConversationTurn turn : conversationStore.get(key)) {
             messages.add(LlmMessage.user(turn.userMessage()));
-            messages.add(LlmMessage.assistant(turn.assistantResponse()));
+            messages.add(LlmMessage.assistant(buildAssistantHistoryContent(turn)));
+            //messages.add(LlmMessage.assistant(turn.executionResult()));
         }
 
         messages.add(LlmMessage.user(promptFactory.buildUserPrompt(command, entities)));
 
         return List.copyOf(messages);
+    }
+
+    private String buildAssistantHistoryContent(
+            LlmConversationTurn turn
+    ) {
+        try {
+            ObjectNode historyNode =
+                    objectMapper.createObjectNode();
+
+            historyNode.set(
+                    "plan",
+                    objectMapper.readTree(
+                            turn.assistantResponse()
+                    )
+            );
+
+            if (
+                    turn.executionResult() != null
+                            && !turn.executionResult().isBlank()
+            ) {
+                historyNode.set(
+                        "executionResult",
+                        objectMapper.readTree(
+                                turn.executionResult()
+                        )
+                );
+            }
+
+            return objectMapper.writeValueAsString(
+                    historyNode
+            );
+        } catch (JacksonException exception) {
+            throw new IllegalStateException(
+                    "Не удалось сформировать историю для модели",
+                    exception
+            );
+        }
     }
 }

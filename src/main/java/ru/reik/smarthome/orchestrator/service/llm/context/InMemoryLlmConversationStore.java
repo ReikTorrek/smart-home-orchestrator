@@ -32,10 +32,7 @@ public class InMemoryLlmConversationStore implements LlmConversationStore {
             LlmConversationKey key,
             LlmConversationTurn turn
     ) {
-        Deque<LlmConversationTurn> turns = conversations.computeIfAbsent(
-                        key,
-                        ignored -> new ArrayDeque<>()
-                );
+        Deque<LlmConversationTurn> turns = conversations.computeIfAbsent(key,ignored -> new ArrayDeque<>());
 
         synchronized (turns) {
             turns.addLast(turn);

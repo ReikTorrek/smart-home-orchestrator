@@ -3,15 +3,18 @@ package ru.reik.smarthome.orchestrator.service.assistant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import ru.reik.smarthome.orchestrator.dto.assistant.ActionExecutionReport;
-import ru.reik.smarthome.orchestrator.dto.assistant.ActionExecutionResult;
-import ru.reik.smarthome.orchestrator.dto.assistant.AssistantRequest;
-import ru.reik.smarthome.orchestrator.dto.assistant.AssistantResponse;
+import ru.reik.smarthome.orchestrator.dto.assistant.*;
+import ru.reik.smarthome.orchestrator.dto.llm.LlmConversationKey;
+import ru.reik.smarthome.orchestrator.dto.llm.LlmConversationTurn;
+import ru.reik.smarthome.orchestrator.dto.llm.LlmExecutionResult;
 import ru.reik.smarthome.orchestrator.service.assistant.client.AssistantRequestHandler;
 import ru.reik.smarthome.orchestrator.service.assistant.client.AssistantRequestHandlerRegistry;
+import ru.reik.smarthome.orchestrator.service.llm.LlmExecutionResultMapper;
+import ru.reik.smarthome.orchestrator.service.llm.context.InMemoryLlmConversationStore;
 import ru.reik.smarthome.orchestrator.service.telegram.CommandService;
 import ru.reik.smarthome.orchestrator.service.llm.LlmPlanFormatter;
 import ru.reik.smarthome.orchestrator.service.llm.LlmPlanningService;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.stream.Collectors;
 
@@ -21,38 +24,35 @@ public class AssistantOrchestratorService {
 
     private final AssistantActionExecutor assistantActionExecutor;
     private final AssistantRequestHandlerRegistry  assistantRequestHandlerRegistry;
+    private final ObjectMapper objectMapper;
+    private final LlmExecutionResultMapper  executionResultMapper;
+    private final InMemoryLlmConversationStore  conversationStore;
 
     public AssistantOrchestratorService(
             AssistantActionExecutor assistantActionExecutor,
-            AssistantRequestHandlerRegistry assistantRequestHandlerRegistry
+            AssistantRequestHandlerRegistry assistantRequestHandlerRegistry,
+            ObjectMapper objectMapper,
+            LlmExecutionResultMapper executionResultMapper,
+            InMemoryLlmConversationStore conversationStore
     ) {
         this.assistantActionExecutor = assistantActionExecutor;
         this.assistantRequestHandlerRegistry = assistantRequestHandlerRegistry;
+        this.objectMapper = objectMapper;
+        this.executionResultMapper = executionResultMapper;
+        this.conversationStore = conversationStore;
     }
 
     public AssistantResponse handle(AssistantRequest request) {
         AssistantRequestHandler handler = assistantRequestHandlerRegistry.get(request.clientType());
-        AssistantResponse response = handler.handle(request);
+        AssistantHandlerResult result = handler.handle(request);
 
         try {
-            ActionExecutionReport report = assistantActionExecutor.executeAll(response.actions());
+            ActionExecutionReport report = assistantActionExecutor.executeAll(result.response().actions());
 
-            if (report.isSuccessful()) {
-                return response;
-            }
+            AssistantHandlerResult resultResponse = buildResultResponse(report, result);
+            saveConversationTurn(request, resultResponse, report);
 
-            if (!report.hasSuccesses()) {
-                return AssistantResponse.text(
-                        buildFailureMessage(report)
-                );
-            }
-
-            return AssistantResponse.text(
-                    buildPartialSuccessMessage(
-                            response,
-                            report
-                    )
-            );
+            return resultResponse.response();
         } catch (IllegalArgumentException exception) {
             return AssistantResponse.text(
                     exception.getMessage()
@@ -69,19 +69,56 @@ public class AssistantOrchestratorService {
         }
     }
 
-    private String buildFailureMessage(
+    private void saveConversationTurn(
+            AssistantRequest request,
+            AssistantHandlerResult resultResponse,
             ActionExecutionReport report
     ) {
-        return """
-                Не удалось выполнить действия:
-                %s
-                """.formatted(formatFailures(report));
+        if (resultResponse.policy() == ConversationPolicy.SKIP) {
+            return;
+        }
+
+        LlmConversationKey llmConversationKey = new LlmConversationKey(request.clientType(), request.conversationId());
+        String responseJson = objectMapper.writeValueAsString(resultResponse.response());
+
+        LlmExecutionResult executionResult = executionResultMapper.map(report);
+        String executionResultJson = objectMapper.writeValueAsString(executionResult);
+
+        conversationStore.append(
+                llmConversationKey,
+                new LlmConversationTurn(
+                        request.text(),
+                        responseJson,
+                        executionResultJson
+                ))
+        ;
     }
 
-    private String buildPartialSuccessMessage(
-            AssistantResponse response,
-            ActionExecutionReport report
-    ) {
+    private AssistantHandlerResult buildResultResponse(ActionExecutionReport report, AssistantHandlerResult result) {
+        if (report.isSuccessful()) {
+            return result;
+        }
+
+        if (!report.hasSuccesses()) {
+            AssistantResponse response = AssistantResponse.text(buildFailureMessage(report, result.response()));
+
+            return new AssistantHandlerResult(response, result.policy());
+        }
+
+        AssistantResponse response = AssistantResponse.text(buildPartialSuccessMessage(report, result.response()));
+
+        return new AssistantHandlerResult(response, result.policy());
+    }
+
+    private String buildFailureMessage(ActionExecutionReport report, AssistantResponse response) {
+        return """
+                Ответ: %s
+                Не удалось выполнить действия:
+                %s
+                """.formatted(response.answer(), formatFailures(report));
+    }
+
+    private String buildPartialSuccessMessage(ActionExecutionReport report, AssistantResponse response) {
         return """
                 %s
 
@@ -98,18 +135,14 @@ public class AssistantOrchestratorService {
         );
     }
 
-    private String formatFailures(
-            ActionExecutionReport report
-    ) {
+    private String formatFailures(ActionExecutionReport report) {
         return report.results().stream()
                 .filter(result -> !result.success())
                 .map(this::formatFailure)
                 .collect(Collectors.joining("\n"));
     }
 
-    private String formatFailure(
-            ActionExecutionResult result
-    ) {
+    private String formatFailure(ActionExecutionResult result) {
         return "- %s → %s: %s".formatted(
                 result.payload().entityId(),
                 result.payload().actionCode(),

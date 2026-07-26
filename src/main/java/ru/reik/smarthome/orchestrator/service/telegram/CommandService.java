@@ -1,6 +1,7 @@
 package ru.reik.smarthome.orchestrator.service.telegram;
 
 import org.springframework.stereotype.Service;
+import ru.reik.smarthome.orchestrator.dto.assistant.AssistantHandlerResult;
 import ru.reik.smarthome.orchestrator.dto.assistant.AssistantRequest;
 import ru.reik.smarthome.orchestrator.dto.assistant.AssistantResponse;
 import ru.reik.smarthome.orchestrator.dto.homeassistant.HomeAssistantActionPayload;
@@ -31,60 +32,66 @@ public class CommandService {
         this.llmPlanningService = llmPlanningService;
     }
 
-    public AssistantResponse handle(AssistantRequest request) {
+    public AssistantHandlerResult handle(AssistantRequest request) {
         String text = request.text();
 
         if (text == null || text.isBlank()) {
-            return AssistantResponse.text("Пустая команда.");
+            AssistantResponse response = AssistantResponse.text("Пустая команда.");
+
+            return AssistantHandlerResult.skip(response);
         }
 
         String command = normalizeCommand(text);
 
         return switch (command) {
-            case "/ha_entities" -> handleHomeAssistantEntities();
-            case "/ha_do" -> handleHomeAssistantDo(text);
-            case "/ha_refresh" -> handleHomeAssistantRefresh();
-            case "/ai_plan" -> handleAiPlan(request);
+            case "/ha_entities"        -> handleHomeAssistantEntities();
+            case "/ha_do"              -> handleHomeAssistantDo(text);
+            case "/ha_refresh"         -> handleHomeAssistantRefresh();
+            case "/ai_plan"            -> handleAiPlan(request);
             case "/clear_conversation" -> clearConversation(request);
-            default -> AssistantResponse.text("Неизвестная команда.");
+            default                    -> AssistantHandlerResult.skip(
+                    AssistantResponse.text("Неизвестная команда.")
+            );
         };
     }
 
-    private AssistantResponse clearConversation(AssistantRequest request) {
+    private AssistantHandlerResult clearConversation(AssistantRequest request) {
         llmPlanningService.clearConversation(request);
 
-        return AssistantResponse.text("Разговор почищен");
+        return AssistantHandlerResult.skip(AssistantResponse.text("Разговор почищен"));
     }
 
-    private AssistantResponse handleAiPlan(AssistantRequest request) {
+    private AssistantHandlerResult handleAiPlan(AssistantRequest request) {
         String userCommand = request.text().substring("/ai_plan".length());
 
         if (userCommand.isBlank()) {
-            return AssistantResponse.text(
-                    "Использование: /ai_plan <команда>"
-            );
+            return AssistantHandlerResult.skip(AssistantResponse.text("Использование: /ai_plan <команда>"));
         }
 
         return llmPlanningService.createPlan(new AssistantRequest(request.clientType(), request.conversationId(), userCommand));
     }
 
-    private AssistantResponse handleHomeAssistantEntities() {
+    private AssistantHandlerResult handleHomeAssistantEntities() {
         List<SmartHomeEntity> entities = catalogService.getEntities();
 
         if (entities.isEmpty()) {
-            return AssistantResponse.text("Каталог Home Assistant пока пуст. Попробуй чуть позже, или обновите каталог вручную");
+            AssistantResponse response = AssistantResponse.text("Каталог Home Assistant пока пуст. Попробуй чуть позже, или обновите каталог вручную");
+
+            return AssistantHandlerResult.skip(response);
         }
 
-        return AssistantResponse.text(entities.stream()
+        AssistantResponse response = AssistantResponse.text(entities.stream()
                 .map(SmartHomeEntity::formatEntity)
                 .collect(Collectors.joining("\n\n")));
+
+        return AssistantHandlerResult.skip(response);
     }
 
-    private AssistantResponse handleHomeAssistantDo(String command) {
+    private AssistantHandlerResult handleHomeAssistantDo(String command) {
         String[] parts = command.trim().split("\\s+", 4);
 
         if (parts.length < 3) {
-            return AssistantResponse.text("""
+            AssistantResponse response = AssistantResponse.text("""
                 Использование:
                 /ha_do <entity_id> <action_code> [parameters_json]
 
@@ -92,6 +99,8 @@ public class CommandService {
                 /ha_do light.zb_5 turn_on
                 /ha_do light.zb_5 set_brightness {"brightness_pct":35}
                 """);
+
+            return AssistantHandlerResult.skip(response);
         }
 
         try {
@@ -106,19 +115,21 @@ public class CommandService {
             }
 
             HomeAssistantActionPayload payload = new HomeAssistantActionPayload(parts[1], parts[2], parameters);
-            return AssistantResponse.withAction(
+            AssistantResponse response = AssistantResponse.withAction(
                     "Выполнено: %s → %s".formatted(payload.entityId(),payload.actionCode()),
                     payload
             );
+
+            return AssistantHandlerResult.save(response);
         } catch (Exception exception) {
-            return AssistantResponse.text(exception.getMessage());
+            return AssistantHandlerResult.skip(AssistantResponse.text(exception.getMessage()));
         }
     }
 
-    private AssistantResponse handleHomeAssistantRefresh() {
+    private AssistantHandlerResult handleHomeAssistantRefresh() {
         CatalogRefreshResult refreshResult = catalogService.refresh();
 
-        return AssistantResponse.text(refreshResult.formattedForTelegram());
+        return AssistantHandlerResult.skip(AssistantResponse.text(refreshResult.formattedForTelegram()));
     }
 
     private String normalizeCommand(String text) {

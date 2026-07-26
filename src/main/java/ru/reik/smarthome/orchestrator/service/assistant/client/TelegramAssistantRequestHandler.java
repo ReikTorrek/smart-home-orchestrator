@@ -2,8 +2,8 @@ package ru.reik.smarthome.orchestrator.service.assistant.client;
 
 import org.springframework.stereotype.Component;
 import ru.reik.smarthome.orchestrator.dto.assistant.AssistantClientType;
+import ru.reik.smarthome.orchestrator.dto.assistant.AssistantHandlerResult;
 import ru.reik.smarthome.orchestrator.dto.assistant.AssistantRequest;
-import ru.reik.smarthome.orchestrator.dto.assistant.AssistantResponse;
 import ru.reik.smarthome.orchestrator.service.telegram.CommandService;
 
 @Component
@@ -20,7 +20,7 @@ public class TelegramAssistantRequestHandler implements AssistantRequestHandler 
     }
 
     @Override
-    public AssistantResponse handle(AssistantRequest request) {
+    public AssistantHandlerResult handle(AssistantRequest request) {
         return commandService.handle(request);
     }
 }
