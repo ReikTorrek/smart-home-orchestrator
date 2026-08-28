@@ -47,11 +47,8 @@ public class CommandService {
             case "/ha_entities"        -> handleHomeAssistantEntities();
             case "/ha_do"              -> handleHomeAssistantDo(text);
             case "/ha_refresh"         -> handleHomeAssistantRefresh();
-            case "/ai_plan"            -> handleAiPlan(request);
             case "/clear_conversation" -> clearConversation(request);
-            default                    -> AssistantHandlerResult.skip(
-                    AssistantResponse.text("Неизвестная команда.")
-            );
+            default                    -> handleAiPlan(request);
         };
     }
 
@@ -62,7 +59,7 @@ public class CommandService {
     }
 
     private AssistantHandlerResult handleAiPlan(AssistantRequest request) {
-        String userCommand = request.text().substring("/ai_plan".length());
+        String userCommand = request.text();
 
         if (userCommand.isBlank()) {
             return AssistantHandlerResult.skip(AssistantResponse.text("Использование: /ai_plan <команда>"));
@@ -109,7 +106,7 @@ public class CommandService {
             if (parts.length == 4) {
                 parameters = objectMapper.readValue(
                         parts[3],
-                        new TypeReference<Map<String, Object>>() {
+                        new TypeReference<>() {
                         }
                 );
             }

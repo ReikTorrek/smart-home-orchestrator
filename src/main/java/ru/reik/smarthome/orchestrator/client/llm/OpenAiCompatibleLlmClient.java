@@ -73,27 +73,14 @@ public class OpenAiCompatibleLlmClient implements LlmClient {
     private String extractContent(
             LlmChatResponse response
     ) {
-        if (
-                response == null
-                        || response.choices() == null
-                        || response.choices().isEmpty()
-        ) {
-            throw new IllegalStateException(
-                    "LLM API вернул пустой список ответов"
-            );
+        if (response == null || response.choices() == null || response.choices().isEmpty()) {
+            throw new IllegalStateException("LLM API вернул пустой список ответов");
         }
 
-        LlmChatResponse.Choice choice =
-                response.choices().getFirst();
+        LlmChatResponse.Choice choice = response.choices().getFirst();
 
-        if (
-                choice.message() == null
-                        || choice.message().content() == null
-                        || choice.message().content().isBlank()
-        ) {
-            throw new IllegalStateException(
-                    "LLM API не вернул содержимое ответа"
-            );
+        if (choice.message() == null || choice.message().content() == null || choice.message().content().isBlank()) {
+            throw new IllegalStateException("LLM API не вернул содержимое ответа");
         }
 
         log.info(

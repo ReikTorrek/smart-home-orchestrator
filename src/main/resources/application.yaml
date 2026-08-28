@@ -8,6 +8,10 @@ telegram:
     username: "${TELEGRAM_BOT_USERNAME}"
     owner-id: "${TELEGRAM_OWNER_ID}"
 
+assistant:
+  context:
+    time-zone: "${ASSISTANT_TIME_ZONE:Europe/Moscow}"
+
 home-assistant:
   base-url: "${HOME_ASSISTANT_BASE_URL}"
   long-lived-token: "${HOME_ASSISTANT_LONG_LIVE_TOKEN}"

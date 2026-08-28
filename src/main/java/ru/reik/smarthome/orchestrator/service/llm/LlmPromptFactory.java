@@ -2,6 +2,9 @@ package ru.reik.smarthome.orchestrator.service.llm;
 
 import org.springframework.stereotype.Component;
 import ru.reik.smarthome.orchestrator.dto.llm.LlmEntityContext;
+import ru.reik.smarthome.orchestrator.dto.llm.LlmEnvironmentContext;
+import ru.reik.smarthome.orchestrator.dto.llm.LlmUserContext;
+import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
@@ -24,10 +27,10 @@ public class LlmPromptFactory {
                 
                 Тебе передаются:
                 
-                1. История диалога пользователя и ассистента.
-                2. Каталог доступных сущностей умного дома.
-                3. Доступные каждой сущности действия и параметры.
-                4. Актуальные state и currentValues сущностей.
+                1. История диалога.
+                2. Контекст environment с локальной датой и временем дома.
+                3. Каталог доступных сущностей.
+                4. Актуальные state и currentValues.
                 5. Текущая команда пользователя.
                 
                 Предыдущие сообщения ассистента могут содержать объект:
@@ -134,6 +137,23 @@ public class LlmPromptFactory {
                 36. Верни только корректный JSON.
                     Не добавляй Markdown, комментарии, пояснения или текст
                     до и после JSON.
+                
+                Контекст environment:
+                
+                37. environment содержит локальную дату, время, день недели
+                   и часовой пояс умного дома.
+                38. Используй environment только тогда, когда дата или время
+                   имеют отношение к команде пользователя.
+                39. Время может учитываться для команд:
+                   "утренний свет", "вечерний свет", "для сна",
+                   "ночной режим", "сделай поуютнее".
+                40. Явные требования пользователя имеют приоритет
+                   над временем суток.
+                41. Не делай вывод, что пользователь спит, работает,
+                   смотрит телевизор или находится дома, только
+                   на основании текущего времени.
+                42. Не изменяй действия только из-за времени,
+                   если команда пользователя уже однозначна.
 
                 Обязательный формат ответа:
                 {
@@ -151,19 +171,18 @@ public class LlmPromptFactory {
 
     public String buildUserPrompt(
             String command,
-            List<LlmEntityContext> entities
+            List<LlmEntityContext> entities,
+            LlmEnvironmentContext envContext
     ) {
-        String catalogJson = objectMapper.writeValueAsString(entities);
+        LlmUserContext context = new LlmUserContext(command, envContext, entities);
 
-        return """
-                Каталог умного дома:
-                %s
-
-                Команда пользователя:
-                %s
-                """.formatted(
-                catalogJson,
-                command
-        );
+        try {
+            return objectMapper.writeValueAsString(context);
+        } catch (JacksonException exception) {
+            throw new IllegalStateException(
+                    "Не удалось сформировать пользовательский контекст для LLM",
+                    exception
+            );
+        }
     }
 }

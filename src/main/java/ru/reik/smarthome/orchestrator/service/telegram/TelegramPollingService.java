@@ -35,34 +35,10 @@ public class TelegramPollingService {
 
     @Scheduled(fixedDelayString = "${telegram.polling-delay-ms:1500}")
     public void poll() {
-        try {
-            log.debug("Polling Telegram updates. Current offset: {}", offset);
+        List<Map<String, Object>> updates = getUpdatesWithRetry();
 
-            int maxAttempts = 3;
-            List<Map<String, Object>> updates = List.of();
-            for (int i = 1; i <= maxAttempts; i++) {
-                try {
-                    updates = telegramClient.getUpdates(offset);
-
-                    break;
-                } catch (Exception exception) {
-                    log.error("Telegram polling failed", exception);
-                    wait(2000);
-                }
-            }
-
-            if (updates.isEmpty()) {
-                return;
-            }
-
-            for (Map<String, Object> update : updates) {
-                handleUpdate(update);
-
-                Number updateId = (Number) update.get("update_id");
-                offset = updateId.longValue() + 1;
-            }
-        } catch (Exception exception) {
-            log.error("Telegram polling failed", exception);
+        for (Map<String, Object> update : updates) {
+            processUpdate(update);
         }
     }
 
@@ -83,9 +59,15 @@ public class TelegramPollingService {
 
         Number chatId = (Number) chat.get("id");
         Map<String, Object> from = (Map<String, Object>) message.get("from");
+        if (from == null) {
+            log.warn("Telegram message has no sender: {}", update);
+
+            return;
+        }
+
         String id = from.get("id").toString();
         if (!telegramAccessService.isOwner(id)) {
-            telegramClient.sendMessage(chatId.longValue(), "Ты ничего не перепутал?");
+            sendMessageWithRetry(chatId.longValue(), "Ты ничего не перепутал?");
 
             return;
         }
@@ -98,14 +80,187 @@ public class TelegramPollingService {
                 text
         ));
 
+        sendMessageWithRetry(chatId.longValue(), assistantResponse.answer());
+    }
+
+    private void processUpdate(
+            Map<String, Object> update
+    ) {
+        Number updateId =
+                getNumber(update, "update_id");
+
+        if (updateId == null) {
+            log.warn(
+                    "Telegram update has no update_id: {}",
+                    update
+            );
+
+            return;
+        }
+
+        try {
+            handleUpdate(update);
+        } catch (Exception exception) {
+            log.error(
+                    "Telegram update processing failed, "
+                            + "updateId={}",
+                    updateId,
+                    exception
+            );
+
+            sendProcessingErrorSafely(update);
+        } finally {
+            /*
+             * Даже ошибочное сообщение считаем обработанным.
+             * Иначе оно навсегда заблокирует очередь.
+             */
+            offset = Math.max(
+                    offset,
+                    updateId.longValue() + 1
+            );
+        }
+    }
+
+    private List<Map<String, Object>> getUpdatesWithRetry() {
         int maxAttempts = 3;
-        for (int i = 0; i < maxAttempts; i++) {
+
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
             try {
-                telegramClient.sendMessage(chatId.longValue(), assistantResponse.answer());
-                break;
+                log.debug("Polling Telegram updates. Current offset: {}", offset);
+
+                return telegramClient.getUpdates(offset);
             } catch (Exception exception) {
-                log.error("Telegram command failed", exception);
+                if (attempt == maxAttempts) {
+                    log.error("Telegram polling failed after {} attempts", maxAttempts, exception);
+
+                    return List.of();
+                }
+
+                log.warn("Telegram polling attempt {}/{} failed", attempt, maxAttempts, exception);
+
+                if (sleepBeforeRetry()) {
+                    return List.of();
+                }
             }
         }
+
+        return List.of();
+    }
+
+    private boolean sleepBeforeRetry() {
+        try {
+            Thread.sleep(2000);
+
+            return false;
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+
+            log.warn("Telegram retry sleep interrupted", exception);
+
+            return true;
+        }
+    }
+
+    private Number getNumber(
+            Map<String, Object> source,
+            String key
+    ) {
+        Object value = source.get(key);
+
+        if (value instanceof Number number) {
+            return number;
+        }
+
+        return null;
+    }
+
+    @SuppressWarnings("unchecked")
+    private void sendProcessingErrorSafely(
+            Map<String, Object> update
+    ) {
+        try {
+            Map<String, Object> message =
+                    (Map<String, Object>)
+                            update.get("message");
+
+            if (message == null) {
+                return;
+            }
+
+            Map<String, Object> chat =
+                    (Map<String, Object>)
+                            message.get("chat");
+
+            if (chat == null) {
+                return;
+            }
+
+            Number chatId =
+                    getNumber(chat, "id");
+
+            if (chatId == null) {
+                return;
+            }
+
+            sendMessageWithRetry(
+                    chatId.longValue(),
+                    "Не удалось обработать команду. "
+                            + "Ошибка уже записана в журнал."
+            );
+        } catch (Exception exception) {
+            log.error(
+                    "Failed to send processing error "
+                            + "to Telegram",
+                    exception
+            );
+        }
+    }
+
+    private void sendMessageWithRetry(
+            long chatId,
+            String text
+    ) {
+        int maxAttempts = 3;
+
+        for (
+                int attempt = 1;
+                attempt <= maxAttempts;
+                attempt++
+        ) {
+            try {
+                telegramClient.sendMessage(
+                        chatId,
+                        text
+                );
+
+                return;
+            } catch (Exception exception) {
+                if (attempt == maxAttempts) {
+                    log.error(
+                            "Failed to send Telegram message "
+                                    + "after {} attempts, chatId={}",
+                            maxAttempts,
+                            chatId,
+                            exception
+                    );
+
+                    return;
+                }
+
+                log.warn(
+                        "Telegram send attempt {}/{} failed, "
+                                + "chatId={}",
+                        attempt,
+                        maxAttempts,
+                        chatId,
+                        exception
+                );
+
+                if (sleepBeforeRetry()) {
+                    return;
+                }
+            }
+        }
+
     }
 }

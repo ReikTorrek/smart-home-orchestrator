@@ -15,18 +15,22 @@ import java.util.List;
 
 @Service
 public class LlmPlanningService {
+
     private final LlmClient llmClient;
     private final LlmPromptFactory promptFactory;
     private final LlmPlanMapper planMapper;
     private final ObjectMapper objectMapper;
     private final LlmContextService llmContextService;
+    private final LlmEnvironmentContextService environmentContextService;
     private final InMemoryLlmConversationStore  conversationStore;
 
     public LlmPlanningService(
             LlmClient llmClient,
             LlmPromptFactory promptFactory,
             LlmPlanMapper planMapper,
-            ObjectMapper objectMapper, LlmContextService llmContextService,
+            ObjectMapper objectMapper,
+            LlmContextService llmContextService,
+            LlmEnvironmentContextService environmentContextService,
             InMemoryLlmConversationStore conversationStore
     ) {
         this.llmClient = llmClient;
@@ -34,6 +38,7 @@ public class LlmPlanningService {
         this.planMapper = planMapper;
         this.objectMapper = objectMapper;
         this.llmContextService = llmContextService;
+        this.environmentContextService = environmentContextService;
         this.conversationStore = conversationStore;
     }
 
@@ -58,7 +63,9 @@ public class LlmPlanningService {
                 request.conversationId()
         );
 
-        List<LlmMessage> messages = buildMessages(conversationKey, command, entities);
+        LlmEnvironmentContext envContext = environmentContextService.getCurrent();
+
+        List<LlmMessage> messages = buildMessages(conversationKey, command, entities, envContext);
 
         String responseJson = llmClient.generateJson(messages);
 
@@ -82,7 +89,8 @@ public class LlmPlanningService {
     private List<LlmMessage> buildMessages(
             LlmConversationKey key,
             String command,
-            List<LlmEntityContext> entities
+            List<LlmEntityContext> entities,
+            LlmEnvironmentContext envContext
     ) {
         List<LlmMessage> messages = new ArrayList<>();
 
@@ -94,7 +102,7 @@ public class LlmPlanningService {
             //messages.add(LlmMessage.assistant(turn.executionResult()));
         }
 
-        messages.add(LlmMessage.user(promptFactory.buildUserPrompt(command, entities)));
+        messages.add(LlmMessage.user(promptFactory.buildUserPrompt(command, entities, envContext)));
 
         return List.copyOf(messages);
     }
