@@ -22,6 +22,16 @@ public class TelegramRegisterCommandService {
 
     @EventListener(ApplicationReadyEvent.class)
     public void registerCommands() {
+        try {
+            register();
+        } catch (Throwable throwable) {
+            register();
+        }
+
+        log.info("Tg commands have been registered");
+    }
+
+    private void register() {
         telegramClient.registerCommands(List.of(
                 new TelegramBotCommand(
                         "ha_entities",
@@ -36,7 +46,5 @@ public class TelegramRegisterCommandService {
                         "Обновить сущности"
                 )
         ));
-
-        log.info("Tg commands have been registered");
     }
 }
