@@ -73,17 +73,17 @@ home-assistant-discovery:
               maximum: 100
               description: "Необязательная яркость цвета в процентах"
 
-        - code: set_color_temperature
-          title: "Изменить температуру белого света"
-          service: turn_on
-          required-capability: COLOR_TEMPERATURE
-          parameters:
-            color_temp_kelvin:
-              type: NUMBER
-              required: true
-              minimum: 2000
-              maximum: 6500
-              description: "Температура света в Кельвинах: меньше — теплее, больше — холоднее"
+#        - code: set_color_temperature
+#          title: "Изменить температуру белого света"
+#          service: turn_on
+#          required-capability: COLOR_TEMPERATURE
+#          parameters:
+#            color_temp_kelvin:
+#              type: NUMBER
+#              required: true
+#              minimum: 2000
+#              maximum: 6500
+#              description: "Температура света в Кельвинах: меньше — теплее, больше — холоднее"
 
         - code: set_effect
           title: "Включить эффект"
