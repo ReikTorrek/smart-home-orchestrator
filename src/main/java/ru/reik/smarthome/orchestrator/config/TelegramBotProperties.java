@@ -6,6 +6,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public record TelegramBotProperties(
         String token,
         String username,
-        String ownerId
+        String ownerId,
+        String apiUrl
 ) {
 }
