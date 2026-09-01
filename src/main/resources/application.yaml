@@ -11,6 +11,7 @@ telegram:
     token: "${TELEGRAM_BOT_TOKEN}"
     username: "${TELEGRAM_BOT_USERNAME}"
     owner-id: "${TELEGRAM_OWNER_ID}"
+    owner-chat-id: "${TELEGRAM_OWNER_CHAT_ID}"
     api-url: "${TELEGRAM_BOT_API_URL}"
 
 assistant:

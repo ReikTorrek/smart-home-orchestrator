@@ -72,7 +72,7 @@ public class TelegramPollingService {
         }
 
         String id = from.get("id").toString();
-        if (!telegramAccessService.isOwner(id)) {
+        if (!telegramAccessService.isOwner(id, String.valueOf(chatId))) {
             sendMessageWithRetry(chatId.longValue(), "Ты ничего не перепутал?");
 
             return;

@@ -7,6 +7,7 @@ public record TelegramBotProperties(
         String token,
         String username,
         String ownerId,
+        String ownerChatId,
         String apiUrl
 ) {
 }

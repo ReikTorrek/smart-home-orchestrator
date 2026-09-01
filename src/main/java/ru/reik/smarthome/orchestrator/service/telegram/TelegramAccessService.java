@@ -13,7 +13,15 @@ public class TelegramAccessService {
         this.telegramBotProperties = telegramBotProperties;
     }
 
-    public boolean isOwner(String userId) {
+    public boolean isOwner(String userId, String chatId) {
+        return isOwnedChatId(chatId) || isOwnedUser(userId);
+    }
+
+    public boolean isOwnedUser(String userId) {
         return Objects.equals(userId, telegramBotProperties.ownerId());
+    }
+
+    public boolean isOwnedChatId(String chatId) {
+        return Objects.equals(chatId, telegramBotProperties.ownerChatId());
     }
 }
