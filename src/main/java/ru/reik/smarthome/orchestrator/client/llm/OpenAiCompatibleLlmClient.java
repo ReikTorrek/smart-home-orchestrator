@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 import ru.reik.smarthome.orchestrator.config.llm.LlmProperties;
@@ -11,6 +12,7 @@ import ru.reik.smarthome.orchestrator.dto.llm.LlmChatRequest;
 import ru.reik.smarthome.orchestrator.dto.llm.LlmChatResponse;
 import ru.reik.smarthome.orchestrator.dto.llm.LlmMessage;
 
+import javax.net.ssl.SSLHandshakeException;
 import java.util.List;
 
 @Component
@@ -31,7 +33,24 @@ public class OpenAiCompatibleLlmClient implements LlmClient {
     }
 
     @Override
-    public String generateJson(List<LlmMessage> messages) {
+    public String chat(List<LlmMessage> messages, boolean isRetry) {
+        try {
+            return generateJson(messages);
+        } catch (ResourceAccessException exception) {
+            if (!isRetry && isRemoteTlsHandshakeFailure(exception)) {
+                log.warn(
+                        "LLM TLS handshake failed. Retrying request once.",
+                        exception
+                );
+
+                return chat(messages, true);
+            }
+
+            throw exception;
+        }
+    }
+
+    private String generateJson(List<LlmMessage> messages) {
         llmProperties.validateConfigured();
 
         LlmChatRequest request = new LlmChatRequest(
@@ -70,9 +89,7 @@ public class OpenAiCompatibleLlmClient implements LlmClient {
         }
     }
 
-    private String extractContent(
-            LlmChatResponse response
-    ) {
+    private String extractContent(LlmChatResponse response) {
         if (response == null || response.choices() == null || response.choices().isEmpty()) {
             throw new IllegalStateException("LLM API вернул пустой список ответов");
         }
@@ -90,5 +107,21 @@ public class OpenAiCompatibleLlmClient implements LlmClient {
         );
 
         return choice.message().content();
+    }
+
+    private boolean isRemoteTlsHandshakeFailure(Throwable throwable) {
+        Throwable current = throwable;
+
+        while (current != null) {
+            if (current instanceof SSLHandshakeException sslException) {
+                String message = sslException.getMessage();
+
+                return message != null && message.contains("Remote host terminated the handshake");
+            }
+
+            current = current.getCause();
+        }
+
+        return false;
     }
 }

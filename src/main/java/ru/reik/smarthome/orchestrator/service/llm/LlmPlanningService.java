@@ -67,7 +67,7 @@ public class LlmPlanningService {
 
         List<LlmMessage> messages = buildMessages(conversationKey, command, entities, envContext);
 
-        String responseJson = llmClient.generateJson(messages);
+        String responseJson = llmClient.chat(messages, false);
 
         LlmPlan plan = objectMapper.readValue(
                 responseJson,

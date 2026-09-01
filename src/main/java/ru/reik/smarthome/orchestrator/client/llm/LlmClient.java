@@ -8,5 +8,5 @@ public interface LlmClient {
     /**
      * Возвращает JSON-текст, созданный моделью.
      */
-    String generateJson(List<LlmMessage> messages);
+    String chat(List<LlmMessage> messages, boolean isRetry);
 }
