@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import ru.reik.smarthome.orchestrator.dto.telegram.TelegramBotCommand;
 
+import javax.net.ssl.SSLHandshakeException;
 import java.util.List;
 import java.util.Map;
 
@@ -59,11 +60,33 @@ public class TelegramClient {
                 .toBodilessEntity();
     }
 
-    public void dropUpdates() {
-        restClient.post()
-                .uri("/deleteWebhook")
-                .body(Map.of("drop_pending_updates", true))
-                .retrieve()
-                .toBodilessEntity();
+    public void dropUpdates(boolean isRetry) {
+        try {
+            restClient.post()
+                    .uri("/deleteWebhook")
+                    .body(Map.of("drop_pending_updates", true))
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (Throwable throwable) {
+            if (isRetry) {
+                throw throwable;
+            }
+
+            Throwable current = throwable;
+
+            while (current != null) {
+                if (current instanceof SSLHandshakeException sslException) {
+                    String message = sslException.getMessage();
+
+                    if (message != null && message.contains("Remote host terminated the handshake")) {
+                        dropUpdates(true);
+
+                        return;
+                    }
+                }
+
+                current = current.getCause();
+            }
+        }
     }
 }

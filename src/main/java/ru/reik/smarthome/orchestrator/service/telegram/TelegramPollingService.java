@@ -36,7 +36,7 @@ public class TelegramPollingService {
 
     @PostConstruct
     public void init() {
-        telegramClient.dropUpdates();
+        telegramClient.dropUpdates(false);
     }
 
     @Scheduled(fixedDelayString = "${telegram.polling-delay-ms:1500}")
