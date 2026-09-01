@@ -83,7 +83,8 @@ public class TelegramPollingService {
         AssistantResponse assistantResponse = assistantOrchestratorService.handle(new AssistantRequest(
                 AssistantClientType.TELEGRAM,
                 chatId.toString(),
-                text
+                text,
+                null
         ));
 
         sendMessageWithRetry(chatId.longValue(), assistantResponse.answer());

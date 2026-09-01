@@ -65,7 +65,7 @@ public class CommandService {
             return AssistantHandlerResult.skip(AssistantResponse.text("Использование: /ai_plan <команда>"));
         }
 
-        return llmPlanningService.createPlan(new AssistantRequest(request.clientType(), request.conversationId(), userCommand));
+        return llmPlanningService.createPlan(new AssistantRequest(request.clientType(), request.conversationId(), userCommand, null));
     }
 
     private AssistantHandlerResult handleHomeAssistantEntities() {

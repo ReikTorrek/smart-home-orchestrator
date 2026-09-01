@@ -1,7 +1,7 @@
 package ru.reik.smarthome.orchestrator.service.llm;
 
 import org.springframework.stereotype.Service;
-import ru.reik.smarthome.orchestrator.config.AssistantContextProperties;
+import ru.reik.smarthome.orchestrator.config.assistant.AssistantContextProperties;
 import ru.reik.smarthome.orchestrator.dto.llm.LlmEnvironmentContext;
 
 import java.time.ZoneId;

@@ -1,4 +1,4 @@
-package ru.reik.smarthome.orchestrator.config;
+package ru.reik.smarthome.orchestrator.config.assistant;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
@@ -12,9 +12,7 @@ public record AssistantContextProperties(
 ) {
     public AssistantContextProperties {
         if (timeZone == null || timeZone.isBlank()) {
-            throw new IllegalArgumentException(
-                    "assistant.context.time-zone must not be blank"
-            );
+            throw new IllegalArgumentException("assistant.context.time-zone must not be blank");
         }
 
         /*

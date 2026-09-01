@@ -3,7 +3,8 @@ package ru.reik.smarthome.orchestrator.dto.assistant;
 public record AssistantRequest(
         AssistantClientType clientType,
         String conversationId,
-        String text
+        String text,
+        String clientId
 ) {
     public AssistantRequest {
         if (clientType == null) {

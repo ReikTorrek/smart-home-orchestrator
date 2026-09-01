@@ -17,6 +17,8 @@ telegram:
 assistant:
   context:
     time-zone: "${ASSISTANT_TIME_ZONE:Europe/Moscow}"
+  api:
+    auth-token: "${ASSISTANT_AUTH_TOKEN}"
 
 home-assistant:
   base-url: "${HOME_ASSISTANT_BASE_URL}"
