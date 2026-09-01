@@ -58,4 +58,12 @@ public class TelegramClient {
                 .retrieve()
                 .toBodilessEntity();
     }
+
+    public void dropUpdates() {
+        restClient.post()
+                .uri("/deleteWebhook")
+                .body(Map.of("drop_pending_updates", true))
+                .retrieve()
+                .toBodilessEntity();
+    }
 }

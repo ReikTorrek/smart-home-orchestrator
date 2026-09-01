@@ -1,5 +1,6 @@
 package ru.reik.smarthome.orchestrator.service.telegram;
 
+import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -31,6 +32,11 @@ public class TelegramPollingService {
         this.telegramClient = telegramClient;
         this.assistantOrchestratorService = assistantOrchestratorService;
         this.telegramAccessService = telegramAccessService;
+    }
+
+    @PostConstruct
+    public void init() {
+        telegramClient.dropUpdates();
     }
 
     @Scheduled(fixedDelayString = "${telegram.polling-delay-ms:1500}")
