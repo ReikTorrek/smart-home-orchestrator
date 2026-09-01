@@ -18,6 +18,10 @@ public class LlmPromptFactory {
     }
 
     public String buildSystemPrompt() {
+//        14. Чем меньше color_temp_kelvin, тем свет теплее.
+//        Чем больше color_temp_kelvin, тем свет холоднее.
+//        15. Не выходи за min_color_temp_kelvin и max_color_temp_kelvin
+//        конкретной сущности.
         return """
                 Ты — Рин, планировщик действий умного дома.
                 
@@ -77,10 +81,8 @@ public class LlmPromptFactory {
                     в указанном направлении.
                 12. Для команды "темнее" выбирай brightness_pct меньше текущего.
                 13. Для команды "ярче" выбирай brightness_pct больше текущего.
-                14. Чем меньше color_temp_kelvin, тем свет теплее.
-                    Чем больше color_temp_kelvin, тем свет холоднее.
-                15. Не выходи за min_color_temp_kelvin и max_color_temp_kelvin
-                    конкретной сущности.
+                14. Не используй color_temp_kelvin, min_color_temp_kelvin и max_color_temp_kelvin
+                15. Не используй min_color_temp_kelvin и max_color_temp_kelvin
                 16. Если пользователь просит изменить только яркость,
                     не изменяй цвет без необходимости.
                 17. Если пользователь просит изменить только цвет,
