@@ -7,7 +7,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import ru.reik.smarthome.orchestrator.dto.assistant.AssistantClientType;
 import ru.reik.smarthome.orchestrator.dto.assistant.AssistantRequest;
+import ru.reik.smarthome.orchestrator.dto.assistant.AssistantResponse;
 import ru.reik.smarthome.orchestrator.dto.voice.VoiceCommandRequest;
+import ru.reik.smarthome.orchestrator.dto.voice.VoiceCommandResponse;
 import ru.reik.smarthome.orchestrator.service.assistant.AssistantOrchestratorService;
 
 @RestController
@@ -20,7 +22,7 @@ public class AssistantController {
     }
 
     @PostMapping
-    public String handle(@Valid @RequestBody VoiceCommandRequest request) {
+    public VoiceCommandResponse handle(@Valid @RequestBody VoiceCommandRequest request) {
         AssistantRequest assistantRequest = new AssistantRequest(
                 AssistantClientType.AUDIO,
                 request.conversationId(),
@@ -28,6 +30,8 @@ public class AssistantController {
                 null
         );
 
-        return assistantOrchestratorService.handle(assistantRequest).answer();
+        AssistantResponse response = assistantOrchestratorService.handle(assistantRequest);
+
+        return new VoiceCommandResponse(response.answer());
     }
 }
