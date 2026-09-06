@@ -6,6 +6,7 @@ import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import ru.reik.smarthome.orchestrator.client.HomeAssistantClient;
+import ru.reik.smarthome.orchestrator.config.homeassistant.HomeAssistantDiscoveryProperties;
 import ru.reik.smarthome.orchestrator.dto.homeassistant.HomeAssistantState;
 import ru.reik.smarthome.orchestrator.dto.smarthome.CatalogRefreshResult;
 import ru.reik.smarthome.orchestrator.dto.smarthome.SmartHomeEntity;
@@ -22,15 +23,19 @@ public class CatalogService {
 
     private final HomeAssistantClient homeAssistantClient;
     private final HomeAssistantEntityMapper homeAssistantEntityMapper;
+    private final HomeAssistantDiscoveryProperties discoveryProperties;
 
     private final AtomicReference<List<SmartHomeEntity>> cachedEntities = new AtomicReference<>(List.of());
     private volatile Instant lastUpdate;
 
-    public CatalogService(HomeAssistantClient homeAssistantClient,
-                          HomeAssistantEntityMapper homeAssistantEntityMapper
+    public CatalogService(
+            HomeAssistantClient homeAssistantClient,
+            HomeAssistantEntityMapper homeAssistantEntityMapper,
+            HomeAssistantDiscoveryProperties discoveryProperties
     ) {
         this.homeAssistantClient = homeAssistantClient;
         this.homeAssistantEntityMapper = homeAssistantEntityMapper;
+        this.discoveryProperties = discoveryProperties;
     }
 
     public List<SmartHomeEntity> getEntities() {
@@ -43,7 +48,8 @@ public class CatalogService {
         List<SmartHomeEntity> entities = states.stream()
                 .map(homeAssistantEntityMapper::map)
                 .flatMap(Optional::stream)
-                .filter(entity -> !entity.actions().isEmpty())
+                .filter(entity -> discoveryProperties.rules().get(entity.domain()).hasActions()
+                        != entity.actionless())
                 .toList();
 
         cachedEntities.set(List.copyOf(entities));

@@ -27,8 +27,25 @@ home-assistant:
 
 home-assistant-discovery:
   rules:
+    sensor:
+      enabled: true
+      has-actions: false
+      excluded-entities:
+        - "sensor.backup_backup_manager_state"
+        - "sensor.backup_next_scheduled_automatic_backup"
+        - "sensor.badinfluencemobile_battery_state"
+        - "sensor.badinfluencemobile_charger_type"
+        - "sensor.vilka_battery_state"
+        - "sensor.vilka_charger_type"
+        - "sensor.temperature_humidity_sensor_287c_temperature"
+        - "sensor.temperature_humidity_sensor_287c_humidity"
+        - "sensor.temperature_humidity_sensor_287c_battery"
+        - "sensor.temperature_humidity_sensor_287c_voltage"
+        - "sensor.zigbee2mqtt_bridge_version"
+
     light:
       enabled: true
+      has-actions: true
       actions:
         - code: turn_on
           title: "Включить"
@@ -110,6 +127,7 @@ home-assistant-discovery:
 
     switch:
       enabled: true
+      has-actions: true
       actions:
         - code: turn_on
           title: "Включить"
@@ -125,6 +143,7 @@ home-assistant-discovery:
 
     scene:
       enabled: true
+      has-actions: true
       actions:
         - code: activate
           title: "Активировать"
@@ -134,6 +153,7 @@ home-assistant-discovery:
 
     input_boolean:
       enabled: true
+      has-actions: true
       actions:
         - code: turn_on
           title: "Включить"

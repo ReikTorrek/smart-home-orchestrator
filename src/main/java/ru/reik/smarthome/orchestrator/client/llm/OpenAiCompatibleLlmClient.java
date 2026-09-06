@@ -17,6 +17,7 @@ import java.util.List;
 
 @Component
 public class OpenAiCompatibleLlmClient implements LlmClient {
+
     private static final Logger log =
             LoggerFactory.getLogger(
                     OpenAiCompatibleLlmClient.class
@@ -33,17 +34,19 @@ public class OpenAiCompatibleLlmClient implements LlmClient {
     }
 
     @Override
-    public String chat(List<LlmMessage> messages, boolean isRetry) {
+    public String chat(List<LlmMessage> messages, int attempts) {
         try {
             return generateJson(messages);
         } catch (ResourceAccessException exception) {
-            if (!isRetry && isRemoteTlsHandshakeFailure(exception)) {
+            int maxAttempts = 2;
+            if (maxAttempts > attempts && isRemoteTlsHandshakeFailure(exception)) {
                 log.warn(
-                        "LLM TLS handshake failed. Retrying request once.",
+                        "LLM TLS handshake failed. Retrying request while attempts allow.",
                         exception
                 );
+                attempts ++;
 
-                return chat(messages, true);
+                return chat(messages, attempts);
             }
 
             throw exception;

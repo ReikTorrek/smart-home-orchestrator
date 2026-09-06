@@ -7,7 +7,5 @@ import ru.reik.smarthome.orchestrator.dto.assistant.AssistantRequest;
 public interface AssistantRequestHandler {
     AssistantClientType clientType();
 
-    AssistantHandlerResult handle(
-            AssistantRequest request
-    );
+    AssistantHandlerResult handle(AssistantRequest request);
 }

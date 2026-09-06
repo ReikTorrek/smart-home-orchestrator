@@ -8,7 +8,9 @@ public record SmartHomeEntity(
         String domain,
         String name,
         String state,
-        List<SmartHomeAction> actions
+        List<SmartHomeAction> actions,
+        List<SmartHomeSensorAttributes> attributes,
+        boolean actionless
 ) {
     public String formatEntity() {
         String actions = this.actions().stream()

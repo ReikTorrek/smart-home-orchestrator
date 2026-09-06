@@ -38,15 +38,17 @@ public class HomeAssistantEntityMapper {
 
         String domain = domainOptional.get();
         String name = extractName(state);
-
         List<SmartHomeAction> actions = resolveActions(state, domain);
+        boolean actionless = actions.isEmpty();
 
         return Optional.of(new SmartHomeEntity(
                 entityId,
                 domain,
                 name,
                 state.state(),
-                actions
+                actions,
+                List.of(),
+                actionless
         ));
     }
 
@@ -83,7 +85,7 @@ public class HomeAssistantEntityMapper {
     private List<SmartHomeAction> resolveActions(HomeAssistantState state, String domain) {
         HomeAssistantDiscoveryProperties.Rule rule = discoveryProperties.rules().get(domain);
 
-        if (rule == null || !rule.enabled()) {
+        if (rule == null || !rule.enabled() || !rule.hasActions()) {
             return List.of();
         }
 
@@ -93,10 +95,7 @@ public class HomeAssistantEntityMapper {
                 .toList();
     }
 
-    private boolean isActionAvailable(
-            HomeAssistantState state,
-            HomeAssistantDiscoveryProperties.Action action
-    ) {
+    private boolean isActionAvailable(HomeAssistantState state, HomeAssistantDiscoveryProperties.Action action) {
         if (action.requiredCapability() == null) {
             return true;
         }
@@ -104,11 +103,7 @@ public class HomeAssistantEntityMapper {
         return capabilityResolver.supports(state, action.requiredCapability());
     }
 
-    private SmartHomeAction mapAction(
-            HomeAssistantState state,
-            String domain,
-            HomeAssistantDiscoveryProperties.Action action
-    ) {
+    private SmartHomeAction mapAction(HomeAssistantState state, String domain, HomeAssistantDiscoveryProperties.Action action) {
         return new SmartHomeAction(
                 action.code(),
                 action.title(),
@@ -119,10 +114,7 @@ public class HomeAssistantEntityMapper {
         );
     }
 
-    private Map<String, ActionParameterDefinition> resolveParameters(
-            HomeAssistantState state,
-            HomeAssistantDiscoveryProperties.Action action
-    ) {
+    private Map<String, ActionParameterDefinition> resolveParameters(HomeAssistantState state, HomeAssistantDiscoveryProperties.Action action) {
         return action.parameters().entrySet().stream()
                 .filter(entry -> isParameterAvailable(
                         state,
@@ -137,10 +129,7 @@ public class HomeAssistantEntityMapper {
                 ));
     }
 
-    private boolean isParameterAvailable(
-            HomeAssistantState state,
-            HomeAssistantDiscoveryProperties.Parameter parameter
-    ) {
+    private boolean isParameterAvailable(HomeAssistantState state, HomeAssistantDiscoveryProperties.Parameter parameter) {
         if (parameter.requiredCapability() == null) {
             return true;
         }
@@ -151,10 +140,7 @@ public class HomeAssistantEntityMapper {
         );
     }
 
-    private ActionParameterDefinition mapParameter(
-            HomeAssistantState state,
-            HomeAssistantDiscoveryProperties.Parameter parameter
-    ) {
+    private ActionParameterDefinition mapParameter(HomeAssistantState state, HomeAssistantDiscoveryProperties.Parameter parameter) {
         List<String> allowedValues =
                 attributeValueResolver.resolveStringList(
                         state,

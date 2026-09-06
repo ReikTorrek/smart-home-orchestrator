@@ -9,7 +9,6 @@ import org.springframework.validation.annotation.Validated;
 import ru.reik.smarthome.orchestrator.dto.smarthome.ActionParameterType;
 import ru.reik.smarthome.orchestrator.dto.smarthome.SmartHomeCapability;
 
-import java.lang.reflect.Parameter;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -21,6 +20,7 @@ public record HomeAssistantDiscoveryProperties(
 ) {
     public record Rule(
             boolean enabled,
+            boolean hasActions,
 
             List<Action> actions,
             Set<String> excludedEntities
