@@ -42,7 +42,7 @@ jobs:
       - name: Restart and verify
         if: github.event_name == 'workflow_dispatch'
         run: |
-          ssh -p 2222 -i ~/.ssh/deploy_key smart-home-deploy@91.214.240.166 <<'REMOTE'
+          ssh -p 2222 -i ~/.ssh/deploy_key smart-home-deploy@91.214.240.166 bash -se <<'REMOTE'
           set -eu
           cd /var/www/smart-home-orchestrator/build/libs
           mv smart-home-orchestrator-0.0.1-SNAPSHOT.jar.new smart-home-orchestrator-0.0.1-SNAPSHOT.jar
