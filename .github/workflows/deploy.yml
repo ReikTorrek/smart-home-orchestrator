@@ -1,0 +1,58 @@
+name: Deploy
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+      - run: ./gradlew build
+
+      - name: Configure SSH
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          test "$GITHUB_REF" = refs/heads/master
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      - name: Upload JAR
+        if: github.event_name == 'workflow_dispatch'
+        run: >-
+          scp -P 2222 -i ~/.ssh/deploy_key
+          build/libs/smart-home-orchestrator-0.0.1-SNAPSHOT.jar
+          smart-home-deploy@91.214.240.166:/var/www/smart-home-orchestrator/build/libs/smart-home-orchestrator-0.0.1-SNAPSHOT.jar.new
+
+      - name: Restart and verify
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          ssh -p 2222 -i ~/.ssh/deploy_key smart-home-deploy@91.214.240.166 <<'REMOTE'
+          set -eu
+          cd /var/www/smart-home-orchestrator/build/libs
+          mv smart-home-orchestrator-0.0.1-SNAPSHOT.jar.new smart-home-orchestrator-0.0.1-SNAPSHOT.jar
+          sudo -n /usr/bin/systemctl restart smart-home-orchestrator.service
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:8082/actuator/health; then
+              exit 0
+            fi
+            sleep 2
+          done
+          /usr/bin/systemctl status smart-home-orchestrator.service --no-pager
+          exit 1
+          REMOTE
