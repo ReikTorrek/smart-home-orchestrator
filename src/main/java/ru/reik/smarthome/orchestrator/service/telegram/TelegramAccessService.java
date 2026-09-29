@@ -3,6 +3,7 @@ package ru.reik.smarthome.orchestrator.service.telegram;
 import org.springframework.stereotype.Service;
 import ru.reik.smarthome.orchestrator.config.TelegramBotProperties;
 
+import java.util.Map;
 import java.util.Objects;
 
 @Service
@@ -23,5 +24,23 @@ public class TelegramAccessService {
 
     public boolean isOwnedChatId(String chatId) {
         return Objects.equals(chatId, telegramBotProperties.ownerChatId());
+    }
+
+    public boolean isValidUpdate(Map<String, Object> update) {
+        Map<String, Object> message = (Map<String, Object>)update.get("message");
+
+        if (message == null) {
+            return false;
+        }
+
+        Map<String, Object> chat = (Map<String, Object>)message.get("chat");
+
+        if (chat == null) {
+            return false;
+        }
+
+        Number chatId = (Number) chat.get("id");
+
+        return chatId != null;
     }
 }

@@ -32,19 +32,12 @@ public class TelegramRegisterCommandService {
     }
 
     private void register() {
-        telegramClient.registerCommands(List.of(
-                new TelegramBotCommand(
-                        "ha_entities",
-                        "Сущности"
-                ),
-                new TelegramBotCommand(
-                        "ha_do",
-                        "Выполнить команду"
-                ),
-                new TelegramBotCommand(
-                        "ha_refresh",
-                        "Обновить сущности"
-                )
-        ));
+        List<TelegramBotCommand> commands = List.of(
+                new TelegramBotCommand("ha_entities", "Сущности"),
+                new TelegramBotCommand("ha_do", "Выполнить команду"),
+                new TelegramBotCommand("ha_refresh", "Обновить сущности")
+        );
+
+        telegramClient.registerCommands(commands, 0);
     }
 }

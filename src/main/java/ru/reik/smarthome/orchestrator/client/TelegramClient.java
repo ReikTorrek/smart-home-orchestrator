@@ -4,17 +4,23 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import ru.reik.smarthome.orchestrator.dto.telegram.TelegramBotCommand;
+import ru.reik.smarthome.orchestrator.dto.telegram.TelegramFileResponse;
 
-import javax.net.ssl.SSLHandshakeException;
 import java.util.List;
 import java.util.Map;
 
 @Service
 public class TelegramClient {
     private final RestClient restClient;
+    private final RestClient fileClient;
 
-    public TelegramClient(@Qualifier("telegramRestClient") RestClient restClient) {
+    private final int max_resend_attempts = 3;
+
+    public TelegramClient(
+            @Qualifier("telegramRestClient") RestClient restClient,
+            @Qualifier("telegramFileRestClient") RestClient fileClient) {
         this.restClient = restClient;
+        this.fileClient = fileClient;
     }
 
     @SuppressWarnings("unchecked")
@@ -41,6 +47,37 @@ public class TelegramClient {
         return (List<Map<String, Object>>) result;
     }
 
+    public TelegramFileResponse getFile(String fileId) {
+        TelegramFileResponse response = restClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/getFile")
+                        .queryParam("file_id", fileId)
+                        .build())
+                .retrieve()
+                .body(TelegramFileResponse.class);
+
+        if (response == null || !response.ok()) {
+            throw new IllegalStateException("Telegram getUpdates returned bad response: " + response);
+        }
+
+        return response;
+    }
+
+    public byte[] downloadFile(String filePath) {
+        byte[] audio = fileClient.get()
+                .uri("/" + filePath)
+                .retrieve()
+                .body(byte[].class);
+
+        if (audio == null || audio.length == 0) {
+            throw new IllegalStateException(
+                    "Telegram returned empty file"
+            );
+        }
+
+        return audio;
+    }
+
     public void sendMessage(long chatId, String text) {
         restClient.post()
                 .uri("/sendMessage")
@@ -52,15 +89,24 @@ public class TelegramClient {
                 .toBodilessEntity();
     }
 
-    public void registerCommands(List<TelegramBotCommand> commands) {
-        restClient.post()
-                .uri("/setMyCommands")
-                .body(Map.of("commands", commands))
-                .retrieve()
-                .toBodilessEntity();
+    public void registerCommands(List<TelegramBotCommand> commands, int attempt) {
+        try {
+            restClient.post()
+                    .uri("/setMyCommands")
+                    .body(Map.of("commands", commands))
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (Throwable throwable) {
+            if (attempt >= this.max_resend_attempts) {
+                throw throwable;
+            }
+
+            attempt++;
+            registerCommands(commands, attempt);
+        }
     }
 
-    public void dropUpdates(boolean isRetry) {
+    public void dropUpdates(int attempt) {
         try {
             restClient.post()
                     .uri("/deleteWebhook")
@@ -68,25 +114,11 @@ public class TelegramClient {
                     .retrieve()
                     .toBodilessEntity();
         } catch (Throwable throwable) {
-            if (isRetry) {
+            if (attempt >= this.max_resend_attempts) {
                 throw throwable;
             }
-
-            Throwable current = throwable;
-
-            while (current != null) {
-                if (current instanceof SSLHandshakeException sslException) {
-                    String message = sslException.getMessage();
-
-                    if (message != null && message.contains("Remote host terminated the handshake")) {
-                        dropUpdates(true);
-
-                        return;
-                    }
-                }
-
-                current = current.getCause();
-            }
+            attempt ++;
+            dropUpdates(attempt);
         }
     }
 }

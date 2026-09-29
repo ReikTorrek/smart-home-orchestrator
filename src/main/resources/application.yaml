@@ -14,6 +14,10 @@ telegram:
     owner-chat-id: "${TELEGRAM_OWNER_CHAT_ID}"
     api-url: "${TELEGRAM_BOT_API_URL}"
 
+speech-to-text:
+  base-url: "${STT_BASE_URL}"
+  api-key: "${STT_API_KEY}"
+
 assistant:
   context:
     time-zone: "${ASSISTANT_TIME_ZONE:Europe/Moscow}"

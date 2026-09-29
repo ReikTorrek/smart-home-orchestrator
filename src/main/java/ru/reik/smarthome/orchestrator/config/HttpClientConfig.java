@@ -21,7 +21,16 @@ public class HttpClientConfig {
     public RestClient telegramRestClient(TelegramBotProperties telegramBotProperties, ExternalProxyProperties proxyProperties) {
         return RestClient.builder()
                 .requestFactory(createExternalRequestFactory(proxyProperties))
-                .baseUrl(telegramBotProperties.apiUrl() + telegramBotProperties.token())
+                .baseUrl(telegramBotProperties.apiUrl() + "/bot" + telegramBotProperties.token())
+                .build();
+    }
+
+    @Bean
+    @Qualifier("telegramFileRestClient")
+    public RestClient telegramFileRestClient(TelegramBotProperties telegramBotProperties, ExternalProxyProperties proxyProperties) {
+        return RestClient.builder()
+                .requestFactory(createExternalRequestFactory(proxyProperties))
+                .baseUrl(telegramBotProperties.apiUrl() + "/file/bot" + telegramBotProperties.token())
                 .build();
     }
 
@@ -46,6 +55,18 @@ public class HttpClientConfig {
                 .defaultHeaders(headers -> {
                     headers.setBearerAuth(llmProperties.apiKey());
                     headers.setContentType(MediaType.APPLICATION_JSON);
+                })
+                .build();
+    }
+
+    @Bean
+    @Qualifier("speechToTextRestClient")
+    public RestClient speechToTextRestClient(SpeechToTextProperties speechToTextProperties) {
+        return RestClient.builder()
+                .baseUrl(speechToTextProperties.baseUrl())
+                .defaultHeaders(headers -> {
+                    headers.set("X-API-Key", speechToTextProperties.apiKey());
+                    headers.setContentType(MediaType.MULTIPART_FORM_DATA);
                 })
                 .build();
     }

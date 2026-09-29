@@ -21,22 +21,28 @@ public class TelegramPollingService {
     private final TelegramClient telegramClient;
     private final AssistantOrchestratorService  assistantOrchestratorService;
     private final TelegramAccessService telegramAccessService;
+    private final TelegramVoiceService telegramVoiceService;
+    private final TelegramTextService telegramTextService;
 
     private long offset = 0;
 
     public TelegramPollingService(
             TelegramClient telegramClient,
             AssistantOrchestratorService assistantOrchestratorService,
-            TelegramAccessService telegramAccessService
+            TelegramAccessService telegramAccessService,
+            TelegramVoiceService telegramVoiceService,
+            TelegramTextService telegramTextService
     ) {
         this.telegramClient = telegramClient;
         this.assistantOrchestratorService = assistantOrchestratorService;
         this.telegramAccessService = telegramAccessService;
+        this.telegramVoiceService = telegramVoiceService;
+        this.telegramTextService = telegramTextService;
     }
 
     @PostConstruct
     public void init() {
-        telegramClient.dropUpdates(false);
+        telegramClient.dropUpdates(0);
     }
 
     @Scheduled(fixedDelayString = "${telegram.polling-delay-ms:1500}")
@@ -56,10 +62,9 @@ public class TelegramPollingService {
             return;
         }
 
-        String text = (String) message.get("text");
         Map<String, Object> chat = (Map<String, Object>) message.get("chat");
 
-        if (text == null || text.isBlank() || chat == null) {
+        if (chat == null) {
             return;
         }
 
@@ -78,29 +83,27 @@ public class TelegramPollingService {
             return;
         }
 
+        String text = "";
+        if (message.containsKey("voice")) {
+            text = telegramVoiceService.handleMessage(message);
+        } else if (message.containsKey("text")) {
+            text = telegramTextService.handleMessage(message);
+        }
+
         log.info("Telegram command from chat {}: {}", chatId, text);
 
-        AssistantResponse assistantResponse = assistantOrchestratorService.handle(new AssistantRequest(
-                AssistantClientType.TELEGRAM,
-                chatId.toString(),
-                text,
-                null
-        ));
+        AssistantResponse assistantResponse = assistantOrchestratorService.handle(
+                new AssistantRequest(AssistantClientType.TELEGRAM, chatId.toString(), text, null)
+        );
 
         sendMessageWithRetry(chatId.longValue(), assistantResponse.answer());
     }
 
-    private void processUpdate(
-            Map<String, Object> update
-    ) {
-        Number updateId =
-                getNumber(update, "update_id");
+    private void processUpdate(Map<String, Object> update) {
+        Number updateId = getNumber(update, "update_id");
 
         if (updateId == null) {
-            log.warn(
-                    "Telegram update has no update_id: {}",
-                    update
-            );
+            log.warn("Telegram update has no update_id: {}", update);
 
             return;
         }
@@ -108,13 +111,7 @@ public class TelegramPollingService {
         try {
             handleUpdate(update);
         } catch (Exception exception) {
-            log.error(
-                    "Telegram update processing failed, "
-                            + "updateId={}",
-                    updateId,
-                    exception
-            );
-
+            log.error("Telegram update processing failed, updateId={}", updateId, exception);
             sendProcessingErrorSafely(update);
         } finally {
             /*
@@ -168,10 +165,7 @@ public class TelegramPollingService {
         }
     }
 
-    private Number getNumber(
-            Map<String, Object> source,
-            String key
-    ) {
+    private Number getNumber(Map<String, Object> source, String key) {
         Object value = source.get(key);
 
         if (value instanceof Number number) {
@@ -181,39 +175,16 @@ public class TelegramPollingService {
         return null;
     }
 
-    @SuppressWarnings("unchecked")
-    private void sendProcessingErrorSafely(
-            Map<String, Object> update
-    ) {
+    private void sendProcessingErrorSafely(Map<String, Object> update) {
         try {
-            Map<String, Object> message =
-                    (Map<String, Object>)
-                            update.get("message");
-
-            if (message == null) {
+            boolean isValidUpdate = telegramAccessService.isValidUpdate(update);
+            if (!isValidUpdate) {
                 return;
             }
 
-            Map<String, Object> chat =
-                    (Map<String, Object>)
-                            message.get("chat");
+            Number chatId = (Number) ((Map<?, ?>) ((Map<?, ?>) update.get("message")).get("chat")).get("id");
 
-            if (chat == null) {
-                return;
-            }
-
-            Number chatId =
-                    getNumber(chat, "id");
-
-            if (chatId == null) {
-                return;
-            }
-
-            sendMessageWithRetry(
-                    chatId.longValue(),
-                    "Не удалось обработать команду. "
-                            + "Ошибка уже записана в журнал."
-            );
+            sendMessageWithRetry(chatId.longValue(), "Не удалось обработать команду. Ошибка уже записана в журнал.");
         } catch (Exception exception) {
             log.error(
                     "Failed to send processing error "
@@ -223,10 +194,7 @@ public class TelegramPollingService {
         }
     }
 
-    private void sendMessageWithRetry(
-            long chatId,
-            String text
-    ) {
+    private void sendMessageWithRetry(long chatId, String text) {
         int maxAttempts = 3;
 
         for (
@@ -235,33 +203,17 @@ public class TelegramPollingService {
                 attempt++
         ) {
             try {
-                telegramClient.sendMessage(
-                        chatId,
-                        text
-                );
+                telegramClient.sendMessage(chatId, text);
 
                 return;
             } catch (Exception exception) {
                 if (attempt == maxAttempts) {
-                    log.error(
-                            "Failed to send Telegram message "
-                                    + "after {} attempts, chatId={}",
-                            maxAttempts,
-                            chatId,
-                            exception
-                    );
+                    log.error("Failed to send Telegram message after {} attempts, chatId={}", maxAttempts, chatId, exception);
 
                     return;
                 }
 
-                log.warn(
-                        "Telegram send attempt {}/{} failed, "
-                                + "chatId={}",
-                        attempt,
-                        maxAttempts,
-                        chatId,
-                        exception
-                );
+                log.warn("Telegram send attempt {}/{} failed, chatId={}", attempt, maxAttempts, chatId, exception);
 
                 if (sleepBeforeRetry()) {
                     return;

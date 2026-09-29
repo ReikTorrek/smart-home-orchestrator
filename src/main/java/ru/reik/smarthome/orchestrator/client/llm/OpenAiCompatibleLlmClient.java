@@ -40,10 +40,7 @@ public class OpenAiCompatibleLlmClient implements LlmClient {
         } catch (ResourceAccessException exception) {
             int maxAttempts = 2;
             if (maxAttempts > attempts && isRemoteTlsHandshakeFailure(exception)) {
-                log.warn(
-                        "LLM TLS handshake failed. Retrying request while attempts allow.",
-                        exception
-                );
+                log.warn("LLM TLS handshake failed. Retrying request while attempts allow.", exception);
                 attempts ++;
 
                 return chat(messages, attempts);
@@ -75,7 +72,19 @@ public class OpenAiCompatibleLlmClient implements LlmClient {
                     .retrieve()
                     .body(LlmChatResponse.class);
 
-            return extractContent(response);
+            if (response == null || response.choices() == null || response.choices().isEmpty()) {
+                throw new IllegalStateException("LLM API вернул пустой список ответов");
+            }
+
+            LlmChatResponse.Choice choice = response.choices().getFirst();
+
+            if (choice.message() == null || choice.message().content() == null || choice.message().content().isBlank()) {
+                throw new IllegalStateException("LLM API не вернул содержимое ответа");
+            }
+
+            log.info("LLM response received, requestedModel={}, actualModel={}", llmProperties.model(), response.model());
+
+            return choice.message().content();
         } catch (RestClientResponseException exception) {
             log.error(
                     "LLM request failed, status={}, body={}",
@@ -90,26 +99,6 @@ public class OpenAiCompatibleLlmClient implements LlmClient {
                     exception
             );
         }
-    }
-
-    private String extractContent(LlmChatResponse response) {
-        if (response == null || response.choices() == null || response.choices().isEmpty()) {
-            throw new IllegalStateException("LLM API вернул пустой список ответов");
-        }
-
-        LlmChatResponse.Choice choice = response.choices().getFirst();
-
-        if (choice.message() == null || choice.message().content() == null || choice.message().content().isBlank()) {
-            throw new IllegalStateException("LLM API не вернул содержимое ответа");
-        }
-
-        log.info(
-                "LLM response received, requestedModel={}, actualModel={}",
-                llmProperties.model(),
-                response.model()
-        );
-
-        return choice.message().content();
     }
 
     private boolean isRemoteTlsHandshakeFailure(Throwable throwable) {
