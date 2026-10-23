@@ -118,10 +118,7 @@ public class TelegramPollingService {
              * Даже ошибочное сообщение считаем обработанным.
              * Иначе оно навсегда заблокирует очередь.
              */
-            offset = Math.max(
-                    offset,
-                    updateId.longValue() + 1
-            );
+            offset = Math.max(offset, updateId.longValue() + 1);
         }
     }
 

@@ -35,9 +35,7 @@ public class HomeAssistantActionService {
         SmartHomeAction action = entity.actions().stream()
                 .filter(item -> item.code().equals(payload.actionCode()))
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Действие '%s' недоступно для %s".formatted(payload.actionCode(), payload.entityId())
-                ));
+                .orElseThrow(() -> new IllegalArgumentException("Действие '%s' недоступно для %s".formatted(payload.actionCode(), payload.entityId())));
 
         actionValidator.validate(action, payload.parameters());
         Map<String, Object> requestBody = new HashMap<>();

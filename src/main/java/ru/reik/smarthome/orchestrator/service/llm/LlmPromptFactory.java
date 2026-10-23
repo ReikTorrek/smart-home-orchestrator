@@ -216,20 +216,13 @@ public class LlmPromptFactory {
                 """;
     }
 
-    public String buildUserPrompt(
-            String command,
-            List<LlmEntityContext> entities,
-            LlmEnvironmentContext envContext
-    ) {
+    public String buildUserPrompt(String command, List<LlmEntityContext> entities, LlmEnvironmentContext envContext) {
         LlmUserContext context = new LlmUserContext(command, envContext, entities);
 
         try {
             return objectMapper.writeValueAsString(context);
         } catch (JacksonException exception) {
-            throw new IllegalStateException(
-                    "Не удалось сформировать пользовательский контекст для LLM",
-                    exception
-            );
+            throw new IllegalStateException("Не удалось сформировать пользовательский контекст для LLM", exception);
         }
     }
 }

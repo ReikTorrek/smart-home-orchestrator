@@ -45,17 +45,13 @@ public class LlmPlanningService {
     public AssistantHandlerResult createPlan(AssistantRequest request) {
         String command = request.text();
         if (command == null || command.isBlank()) {
-            throw new IllegalArgumentException(
-                    "Команда для модели не должна быть пустой"
-            );
+            throw new IllegalArgumentException("Команда для модели не должна быть пустой");
         }
 
         List<LlmEntityContext> entities = llmContextService.getCurrentEntities();
 
         if (entities.isEmpty()) {
-            throw new IllegalStateException(
-                    "Каталог умного дома пуст. Сначала выполни /ha_refresh"
-            );
+            throw new IllegalStateException("Каталог умного дома пуст. Сначала выполни /ha_refresh");
         }
 
         LlmConversationKey conversationKey = new LlmConversationKey(
@@ -99,43 +95,26 @@ public class LlmPlanningService {
         for (LlmConversationTurn turn : conversationStore.get(key)) {
             messages.add(LlmMessage.user(turn.userMessage()));
             messages.add(LlmMessage.assistant(buildAssistantHistoryContent(turn)));
-            //messages.add(LlmMessage.assistant(turn.executionResult()));
         }
 
-        messages.add(LlmMessage.user(promptFactory.buildUserPrompt(command, entities, envContext)));
+        String prompt = promptFactory.buildUserPrompt(command, entities, envContext);
+        LlmMessage message = LlmMessage.user(prompt);
+        messages.add(message);
 
         return List.copyOf(messages);
     }
 
-    private String buildAssistantHistoryContent(
-            LlmConversationTurn turn
-    ) {
+    private String buildAssistantHistoryContent(LlmConversationTurn turn) {
         try {
-            ObjectNode historyNode =
-                    objectMapper.createObjectNode();
+            ObjectNode historyNode = objectMapper.createObjectNode();
 
-            historyNode.set(
-                    "plan",
-                    objectMapper.readTree(
-                            turn.assistantResponse()
-                    )
-            );
+            historyNode.set("plan", objectMapper.readTree(turn.assistantResponse()));
 
-            if (
-                    turn.executionResult() != null
-                            && !turn.executionResult().isBlank()
-            ) {
-                historyNode.set(
-                        "executionResult",
-                        objectMapper.readTree(
-                                turn.executionResult()
-                        )
-                );
+            if (turn.executionResult() != null && !turn.executionResult().isBlank()) {
+                historyNode.set("executionResult", objectMapper.readTree(turn.executionResult()));
             }
 
-            return objectMapper.writeValueAsString(
-                    historyNode
-            );
+            return objectMapper.writeValueAsString(historyNode);
         } catch (JacksonException exception) {
             throw new IllegalStateException(
                     "Не удалось сформировать историю для модели",

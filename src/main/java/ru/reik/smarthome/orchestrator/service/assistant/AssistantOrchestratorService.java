@@ -11,9 +11,6 @@ import ru.reik.smarthome.orchestrator.service.assistant.client.AssistantRequestH
 import ru.reik.smarthome.orchestrator.service.assistant.client.AssistantRequestHandlerRegistry;
 import ru.reik.smarthome.orchestrator.service.llm.LlmExecutionResultMapper;
 import ru.reik.smarthome.orchestrator.service.llm.context.InMemoryLlmConversationStore;
-import ru.reik.smarthome.orchestrator.service.telegram.CommandService;
-import ru.reik.smarthome.orchestrator.service.llm.LlmPlanFormatter;
-import ru.reik.smarthome.orchestrator.service.llm.LlmPlanningService;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.stream.Collectors;
@@ -54,18 +51,11 @@ public class AssistantOrchestratorService {
 
             return resultResponse.response();
         } catch (IllegalArgumentException exception) {
-            return AssistantResponse.text(
-                    exception.getMessage()
-            );
+            return AssistantResponse.text(exception.getMessage());
         } catch (Exception exception) {
-            log.error(
-                    "Assistant action execution failed",
-                    exception
-            );
+            log.error("Assistant action execution failed", exception);
 
-            return AssistantResponse.text(
-                    "Не удалось выполнить действие в Home Assistant."
-            );
+            return AssistantResponse.text("Не удалось выполнить действие в Home Assistant.");
         }
     }
 

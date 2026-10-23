@@ -18,17 +18,12 @@ import java.util.List;
 @Component
 public class OpenAiCompatibleLlmClient implements LlmClient {
 
-    private static final Logger log =
-            LoggerFactory.getLogger(
-                    OpenAiCompatibleLlmClient.class
-            );
+    private static final Logger log = LoggerFactory.getLogger(OpenAiCompatibleLlmClient.class);
 
     private final RestClient restClient;
     private final LlmProperties llmProperties;
 
-    public OpenAiCompatibleLlmClient(
-            @Qualifier("llmClient") RestClient restClient,
-            LlmProperties llmProperties) {
+    public OpenAiCompatibleLlmClient(@Qualifier("llmClient") RestClient restClient, LlmProperties llmProperties) {
         this.restClient = restClient;
         this.llmProperties = llmProperties;
     }
@@ -58,11 +53,7 @@ public class OpenAiCompatibleLlmClient implements LlmClient {
                 messages,
                 new LlmChatRequest.ResponseFormat("json_object"),
                 llmProperties.temperature(),
-                new LlmChatRequest.Provider(
-                        true,
-                        "deny",
-                        true
-                )
+                new LlmChatRequest.Provider(true, "deny", true)
         );
 
         try {
@@ -93,11 +84,7 @@ public class OpenAiCompatibleLlmClient implements LlmClient {
                     exception
             );
 
-            throw new IllegalStateException(
-                    "LLM API вернул ошибку: "
-                            + exception.getStatusCode(),
-                    exception
-            );
+            throw new IllegalStateException("LLM API вернул ошибку: " + exception.getStatusCode(), exception);
         }
     }
 
