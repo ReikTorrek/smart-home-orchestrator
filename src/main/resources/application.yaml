@@ -179,3 +179,7 @@ external-proxy:
   enabled: "${EXTERNAL_PROXY_ENABLED:false}"
   host: "${EXTERNAL_PROXY_HOST:127.0.0.1}"
   port: "${EXTERNAL_PROXY_PORT:10808}"
+
+alice:
+  webhook-secret: "${ALICE_WEBHOOK_SECRET}"
+  skill-id: "${ALICE_SKILL_ID}"
